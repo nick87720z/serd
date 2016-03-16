@@ -68,7 +68,7 @@ static inline SerdStatus
 push_byte(SerdReader* reader, Ref ref, const uint8_t c)
 {
 	SERD_STACK_ASSERT_TOP(reader, ref);
-	uint8_t* const  s    = serd_stack_push(&reader->stack, 1);
+	char* const     s    = serd_stack_push(&reader->stack, 1);
 	SerdNode* const node = (SerdNode*)(reader->stack.buf + ref);
 	++node->n_bytes;
 	*(s - 1) = c;
