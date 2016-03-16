@@ -355,7 +355,8 @@ main(void)
 	assert(serd_env_set_base_uri(env, &node));
 	assert(serd_node_equals(serd_env_get_base_uri(env, NULL), &node));
 
-	SerdChunk prefix, suffix;
+	SerdStringView prefix;
+	SerdStringView suffix;
 	assert(serd_env_expand(env, &b, &prefix, &suffix));
 
 	SerdNode xnode = serd_env_expand_node(env, &node);
