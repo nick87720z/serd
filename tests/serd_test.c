@@ -218,32 +218,6 @@ main(void)
 	}
 	msg = serd_strerror((SerdStatus)-1);
 
-	// Test serd_uri_to_path
-
-	const char* uri = "file:///home/user/foo.ttl";
-	assert(!strcmp(serd_uri_to_path(uri), "/home/user/foo.ttl"));
-
-	uri = "file://localhost/home/user/foo.ttl";
-	assert(!strcmp(serd_uri_to_path(uri), "/home/user/foo.ttl"));
-
-	uri = "file:illegal/file/uri";
-	assert(!serd_uri_to_path(uri));
-
-	uri = "file:///c:/awful/system";
-	assert(!strcmp(serd_uri_to_path(uri), "c:/awful/system"));
-
-	uri = "file:///c:awful/system";
-	assert(!strcmp(serd_uri_to_path(uri), "/c:awful/system"));
-
-	uri = "file:///0/1";
-	assert(!strcmp(serd_uri_to_path(uri), "/0/1"));
-
-	uri = "C:\\Windows\\Sucks";
-	assert(!strcmp(serd_uri_to_path(uri), "C:\\Windows\\Sucks"));
-
-	uri = "C|/Windows/Sucks";
-	assert(!strcmp(serd_uri_to_path(uri), "C|/Windows/Sucks"));
-
 	// Test file URI escaping and parsing
 
 	test_file_uri(NULL, "C:/My 100%", true,
