@@ -103,8 +103,6 @@ typedef enum {
 static bool
 write_node(SerdWriter*        writer,
            const SerdNode*    node,
-           const SerdNode*    datatype,
-           const SerdNode*    lang,
            Field              field,
            SerdStatementFlags flags);
 
@@ -428,12 +426,12 @@ is_inline_start(const SerdWriter* writer, Field field, SerdStatementFlags flags)
 static bool
 write_literal(SerdWriter*        writer,
               const SerdNode*    node,
-              const SerdNode*    datatype,
-              const SerdNode*    lang,
               SerdStatementFlags flags)
 {
-	const char* node_str = serd_node_get_string(node);
-	const char* type_uri = serd_node_get_string(datatype);
+	const SerdNode* datatype = serd_node_get_datatype(node);
+	const SerdNode* lang     = serd_node_get_language(node);
+	const char*     node_str = serd_node_get_string(node);
+	const char*     type_uri = serd_node_get_string(datatype);
 	if (supports_abbrev(writer) && type_uri) {
 		if (!strncmp(type_uri, NS_XSD, sizeof(NS_XSD) - 1) && (
 			    !strcmp(type_uri + sizeof(NS_XSD) - 1, "boolean") ||
@@ -468,7 +466,7 @@ write_literal(SerdWriter*        writer,
 		sink(serd_node_get_string(lang), lang->n_bytes, writer);
 	} else if (type_uri) {
 		sink("^^", 2, writer);
-		return write_node(writer, datatype, NULL, NULL, FIELD_NONE, flags);
+		return write_node(writer, datatype, FIELD_NONE, flags);
 	}
 	return true;
 }
@@ -626,15 +624,13 @@ write_blank(SerdWriter* const        writer,
 static bool
 write_node(SerdWriter*        writer,
            const SerdNode*    node,
-           const SerdNode*    datatype,
-           const SerdNode*    lang,
            Field              field,
            SerdStatementFlags flags)
 {
 	bool ret = false;
 	switch (node->type) {
 	case SERD_LITERAL:
-		ret = write_literal(writer, node, datatype, lang, flags);
+		ret = write_literal(writer, node, flags);
 		break;
 	case SERD_URI:
 		ret = write_uri_node(writer, node, field, flags);
@@ -659,7 +655,7 @@ is_resource(const SerdNode* node)
 static void
 write_pred(SerdWriter* writer, SerdStatementFlags flags, const SerdNode* pred)
 {
-	write_node(writer, pred, NULL, NULL, FIELD_PREDICATE, flags);
+	write_node(writer, pred, FIELD_PREDICATE, flags);
 	write_sep(writer, SEP_P_O);
 	serd_node_set(&writer->context.predicate, pred);
 }
@@ -668,9 +664,7 @@ static bool
 write_list_obj(SerdWriter*        writer,
                SerdStatementFlags flags,
                const SerdNode*    predicate,
-               const SerdNode*    object,
-               const SerdNode*    datatype,
-               const SerdNode*    lang)
+               const SerdNode*    object)
 {
 	if (!strcmp(serd_node_get_string(object), NS_RDF "nil")) {
 		--writer->indent;
@@ -678,7 +672,7 @@ write_list_obj(SerdWriter*        writer,
 		return true;
 	} else if (!strcmp(serd_node_get_string(predicate), NS_RDF "first")) {
 		write_sep(writer, SEP_LIST_SEP);
-		write_node(writer, object, datatype, lang, FIELD_OBJECT, flags);
+		write_node(writer, object, FIELD_OBJECT, flags);
 	}
 	return false;
 }
@@ -689,9 +683,7 @@ serd_writer_write_statement(SerdWriter*        writer,
                             const SerdNode*    graph,
                             const SerdNode*    subject,
                             const SerdNode*    predicate,
-                            const SerdNode*    object,
-                            const SerdNode*    datatype,
-                            const SerdNode*    lang)
+                            const SerdNode*    object)
 {
 	if (!subject || !predicate || !object ||
 	    !is_resource(subject) || !is_resource(predicate)) {
@@ -706,14 +698,14 @@ serd_writer_write_statement(SerdWriter*        writer,
 	switch (writer->syntax) {
 	case SERD_NTRIPLES:
 	case SERD_NQUADS:
-		TRY(write_node(writer, subject, NULL, NULL, FIELD_SUBJECT, flags));
+		TRY(write_node(writer, subject, FIELD_SUBJECT, flags));
 		sink(" ", 1, writer);
-		TRY(write_node(writer, predicate, NULL, NULL, FIELD_PREDICATE, flags));
+		TRY(write_node(writer, predicate, FIELD_PREDICATE, flags));
 		sink(" ", 1, writer);
-		TRY(write_node(writer, object, datatype, lang, FIELD_OBJECT, flags));
+		TRY(write_node(writer, object, FIELD_OBJECT, flags));
 		if (writer->syntax == SERD_NQUADS && graph) {
 			sink(" ", 1, writer);
-			TRY(write_node(writer, graph, datatype, lang, FIELD_GRAPH, flags));
+			TRY(write_node(writer, graph, FIELD_GRAPH, flags));
 		}
 		sink(" .\n", 3, writer);
 		return SERD_SUCCESS;
@@ -733,7 +725,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 
 		reset_context(writer, true);
 		if (graph) {
-			TRY(write_node(writer, graph, datatype, lang, FIELD_GRAPH, flags));
+			TRY(write_node(writer, graph, FIELD_GRAPH, flags));
 			++writer->indent;
 			write_sep(writer, SEP_GRAPH_BEGIN);
 			serd_node_set(&writer->context.graph, graph);
@@ -741,7 +733,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 	}
 
 	if ((flags & SERD_LIST_CONT)) {
-		if (write_list_obj(writer, flags, predicate, object, datatype, lang)) {
+		if (write_list_obj(writer, flags, predicate, object)) {
 			// Reached end of list
 			if (--writer->list_depth == 0 && writer->list_subj) {
 				reset_context(writer, false);
@@ -758,7 +750,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 				++writer->indent;
 			}
 			write_sep(writer, SEP_END_O);
-			write_node(writer, object, datatype, lang, FIELD_OBJECT, flags);
+			write_node(writer, object, FIELD_OBJECT, flags);
 			if (!(flags & SERD_ANON_O_BEGIN)) {
 				--writer->indent;
 			}
@@ -767,7 +759,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 			Sep sep = ctx(writer, FIELD_PREDICATE) ? SEP_END_P : SEP_S_P;
 			write_sep(writer, sep);
 			write_pred(writer, flags, predicate);
-			write_node(writer, object, datatype, lang, FIELD_OBJECT, flags);
+			write_node(writer, object, FIELD_OBJECT, flags);
 		}
 	} else {
 		// No abbreviation
@@ -782,7 +774,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 		}
 
 		if (!(flags & SERD_ANON_CONT)) {
-			write_node(writer, subject, NULL, NULL, FIELD_SUBJECT, flags);
+			write_node(writer, subject, FIELD_SUBJECT, flags);
 			++writer->indent;
 			write_sep(writer, SEP_S_P);
 		} else {
@@ -796,7 +788,7 @@ serd_writer_write_statement(SerdWriter*        writer,
 			write_pred(writer, flags, predicate);
 		}
 
-		write_node(writer, object, datatype, lang, FIELD_OBJECT, flags);
+		write_node(writer, object, FIELD_OBJECT, flags);
 	}
 
 	if (flags & (SERD_ANON_S_BEGIN|SERD_ANON_O_BEGIN)) {
