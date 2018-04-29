@@ -79,6 +79,7 @@ lib_source = ['src/byte_source.c',
               'src/reader.c',
               'src/string.c',
               'src/uri.c',
+              'src/world.c',
               'src/writer.c']
 
 def build(bld):

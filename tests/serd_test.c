@@ -356,6 +356,8 @@ main(void)
 
 	// Test SerdEnv
 
+	SerdWorld* world = serd_world_new();
+
 	SerdNode* u   = serd_node_new_string(SERD_URI, "http://example.org/foo");
 	SerdNode* b   = serd_node_new_string(SERD_CURIE, "invalid");
 	SerdNode* c   = serd_node_new_string(SERD_CURIE, "eg.2:b");
@@ -409,8 +411,13 @@ main(void)
 	FILE* fd = fopen(path, "wb");
 	assert(fd);
 
-	SerdWriter* writer = serd_writer_new(
-		SERD_TURTLE, (SerdStyle)0, env, NULL, (SerdWriteFunc)fwrite, fd);
+	SerdWriter* writer = serd_writer_new(world,
+	                                     SERD_TURTLE,
+	                                     (SerdStyle)0,
+	                                     env,
+	                                     NULL,
+	                                     (SerdWriteFunc)fwrite,
+	                                     fd);
 	assert(writer);
 
 	serd_writer_chop_blank_prefix(writer, "tmp");
@@ -486,7 +493,7 @@ main(void)
 	// Test buffer sink
 	SerdBuffer buffer = { NULL, 0 };
 	writer = serd_writer_new(
-		SERD_TURTLE, (SerdStyle)0, env, NULL, serd_buffer_sink, &buffer);
+		world, SERD_TURTLE, (SerdStyle)0, env, NULL, serd_buffer_sink, &buffer);
 
 	o = serd_node_new_string(SERD_URI, "http://example.org/base");
 	assert(!serd_writer_set_base_uri(writer, o));
@@ -503,7 +510,7 @@ main(void)
 
 	ReaderTest* rt     = (ReaderTest*)calloc(1, sizeof(ReaderTest));
 	SerdSink    sink   = { rt, NULL, NULL, test_sink, NULL };
-	SerdReader* reader = serd_reader_new(SERD_TURTLE, &sink);
+	SerdReader* reader = serd_reader_new(world, SERD_TURTLE, &sink);
 	assert(reader);
 
 	SerdNode* g = serd_node_new_string(SERD_URI, "http://example.org/");
@@ -529,6 +536,7 @@ main(void)
 	fclose(fd);
 
 	serd_env_free(env);
+	serd_world_free(world);
 
 	printf("Success\n");
 	return 0;
