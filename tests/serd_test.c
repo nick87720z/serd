@@ -357,6 +357,16 @@ main(void)
 	serd_node_free(rel);
 	serd_node_free(base);
 
+	// Test serd_node_new_blank
+
+	assert(!serd_node_new_blank(NULL));
+
+	SerdNode* blank = serd_node_new_blank("b0");
+	assert(serd_node_get_length(blank) == 2);
+	assert(serd_node_get_flags(blank) == 0);
+	assert(!strcmp(serd_node_get_string(blank), "b0"));
+	serd_node_free(blank);
+
 	// Test SerdEnv
 
 	SerdWorld* world = serd_world_new();
