@@ -297,8 +297,10 @@ main(void)
 	               "en"));
 	serd_node_free(hello_l);
 
-	SerdNode* hello_dt = serd_node_new_literal(
-	        "hello_dt\"", "http://example.org/Thing", NULL);
+	SerdNode* eg_Thing = serd_node_new_uri_from_string(
+	        "http://example.org/Thing", NULL, NULL);
+
+	SerdNode* hello_dt = serd_node_new_literal("hello_dt\"", eg_Thing, NULL);
 	assert(serd_node_get_length(hello_dt) == 9);
 	assert(!strcmp(serd_node_get_string(hello_dt), "hello_dt\""));
 	assert(serd_node_get_flags(hello_dt) ==
@@ -306,6 +308,7 @@ main(void)
 	assert(!strcmp(serd_node_get_string(serd_node_get_datatype(hello_dt)),
 	               "http://example.org/Thing"));
 	serd_node_free(hello_dt);
+	serd_node_free(eg_Thing);
 
 	// Test serd_node_new_uri_from_string
 
@@ -451,7 +454,9 @@ main(void)
 			       junk[i][0], junk[i][1], junk[i][2]));
 	}
 
-	SerdNode* t = serd_node_new_literal((char*)buf, "urn:Type", NULL);
+	SerdNode* urn_Type = serd_node_new_uri_from_string("urn:Type", NULL, NULL);
+
+	SerdNode* t = serd_node_new_literal((char*)buf, urn_Type, NULL);
 	SerdNode* l = serd_node_new_literal((char*)buf, NULL, "en");
 	const SerdNode* good[][5] = { { s, p, o },
 	                              { s, p, o },
@@ -489,6 +494,7 @@ main(void)
 	serd_node_free(o);
 	serd_node_free(t);
 	serd_node_free(l);
+	serd_node_free(urn_Type);
 
 	// Test buffer sink
 	SerdBuffer buffer = { NULL, 0 };
