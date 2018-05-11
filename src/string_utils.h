@@ -102,22 +102,6 @@ serd_update_flags(const char c, SerdNodeFlags* const flags)
 	}
 }
 
-static inline size_t
-serd_substrlen(const char* const    str,
-               const size_t         len,
-               SerdNodeFlags* const flags)
-{
-	if (flags) {
-		size_t i = 0;
-		*flags = 0;
-		for (; i < len && str[i]; ++i) {
-			serd_update_flags(str[i], flags);
-		}
-		return i;
-	}
-	return strlen(str);
-}
-
 static inline int
 serd_strncasecmp(const char* s1, const char* s2, size_t n)
 {
