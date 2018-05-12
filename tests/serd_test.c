@@ -119,6 +119,23 @@ check_rel_uri(const char*     uri,
 	return ret;
 }
 
+static int
+test_get_blank(void)
+{
+	SerdWorld* world = serd_world_new();
+	char       expected[8];
+
+	for (unsigned i = 0; i < 32; ++i) {
+		const SerdNode* blank = serd_world_get_blank(world);
+
+		snprintf(expected, sizeof(expected), "b%u", i + 1);
+		assert(!strcmp(serd_node_get_string(blank), expected));
+	}
+
+	serd_world_free(world);
+	return 0;
+}
+
 int
 main(void)
 {
@@ -369,6 +386,10 @@ main(void)
 	// Test SerdEnv
 
 	SerdWorld* world = serd_world_new();
+
+	if (test_get_blank()) {
+		return 1;
+	}
 
 	SerdNode* u   = serd_node_new_uri("http://example.org/foo");
 	SerdNode* b   = serd_node_new_curie("invalid");
