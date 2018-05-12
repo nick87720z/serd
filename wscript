@@ -72,7 +72,8 @@ def configure(conf):
          'Build utilities':      bool(conf.env['BUILD_UTILS']),
          'Build unit tests':     bool(conf.env['BUILD_TESTS'])})
 
-lib_source = ['src/byte_source.c',
+lib_source = ['src/base64.c',
+              'src/byte_source.c',
               'src/env.c',
               'src/n3.c',
               'src/node.c',
