@@ -9,6 +9,7 @@ serd (1.0.0) unstable;
   * Remove half-baked serd_uri_to_path()
   * Bring read/write interface closer to C standard
   * Add SerdWorld for shared library state
+  * Use a fixed-size reader stack
 
  -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
 
