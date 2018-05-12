@@ -46,5 +46,6 @@ void      serd_node_set(SerdNode** dst, const SerdNode* src);
 size_t    serd_node_total_size(const SerdNode* node);
 void      serd_node_zero_pad(SerdNode* node);
 SerdNode* serd_new_resolved_uri_i(const char* str, const SerdURI* base);
+int       serd_node_wildcard_compare(const SerdNode* a, const SerdNode* b);
 
 #endif  // SERD_NODE_H

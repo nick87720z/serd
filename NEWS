@@ -13,6 +13,7 @@ serd (1.0.0) unstable;
   * Simplify writer style options
   * Simplify streaming API and improve pretty printing
   * Add logging functions to public API
+  * Add model for storing statements in memory
 
  -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
 

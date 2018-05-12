@@ -327,6 +327,13 @@ serd_node_compare(const SerdNode* a, const SerdNode* b)
 	                               serd_node_maybe_get_meta_c(b));
 }
 
+/** Compare nodes, considering NULL a wildcard match. */
+int
+serd_node_wildcard_compare(const SerdNode* a, const SerdNode* b)
+{
+	return (!a || !b) ? 0 : serd_node_compare(a, b);
+}
+
 static size_t
 serd_uri_string_length(const SerdURI* uri)
 {
