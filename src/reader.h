@@ -150,7 +150,7 @@ static inline SerdStatus
 push_byte(SerdReader* reader, SerdNode* node, const uint8_t c)
 {
 	SERD_STACK_ASSERT_TOP(reader, node);
-	char* const s = (char*)serd_stack_push(&reader->stack, 1);
+	uint8_t* const s = (uint8_t*)serd_stack_push(&reader->stack, 1);
 	if (!s) {
 		return SERD_ERR_OVERFLOW;
 	}
