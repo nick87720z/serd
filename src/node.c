@@ -42,7 +42,7 @@ static const size_t serd_node_align = sizeof(SerdNode);
 
 typedef struct StaticNode {
 	SerdNode node;
-	char     buf[sizeof(NS_XSD) + sizeof("base64Binary") + 1];
+	char     buf[sizeof(NS_XSD) + sizeof("base64Binary") + sizeof(SerdNode)];
 } StaticNode;
 
 #define DEFINE_XSD_NODE(name) \
@@ -75,6 +75,27 @@ static SerdNode*
 serd_node_get_meta(SerdNode* node)
 {
 	return node + 1 + (serd_node_pad_size(node->n_bytes) / serd_node_align);
+}
+
+static void
+serd_node_check_padding(const SerdNode* node)
+{
+	(void)node;
+#ifndef NDEBUG
+	if (node) {
+		const size_t unpadded_size = node->n_bytes;
+		const size_t padded_size   = serd_node_pad_size(node->n_bytes);
+		for (size_t i = 0; i < padded_size - unpadded_size; ++i) {
+			assert(serd_node_buffer_c(node)[unpadded_size + i] == '\0');
+		}
+
+		if (node->flags & SERD_HAS_DATATYPE) {
+			serd_node_check_padding(serd_node_get_datatype(node));
+		} else if (node->flags & SERD_HAS_LANGUAGE) {
+			serd_node_check_padding(serd_node_get_language(node));
+		}
+	}
+#endif
 }
 
 static size_t
@@ -127,6 +148,7 @@ serd_node_new_simple(SerdType type, const char* str)
 	SerdNode*    node    = serd_node_malloc(n_bytes, 0, type);
 	memcpy(serd_node_buffer(node), str, n_bytes);
 	node->n_bytes = n_bytes;
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -142,6 +164,7 @@ serd_node_new_string(const char* str)
 	SerdNode*    node    = serd_node_malloc(n_bytes, flags, SERD_LITERAL);
 	memcpy(serd_node_buffer(node), str, n_bytes);
 	node->n_bytes = n_bytes;
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -150,6 +173,8 @@ serd_node_new_literal(const char*     str,
                       const SerdNode* datatype,
                       const char*     lang)
 {
+	serd_node_check_padding(datatype);
+
 	if (!str || (lang && datatype &&
 	             strcmp(serd_node_buffer_c(datatype), NS_RDF "#langString")) ||
 	    (datatype && serd_node_get_type(datatype) != SERD_URI)) {
@@ -173,6 +198,7 @@ serd_node_new_literal(const char*     str,
 		lang_node->type    = SERD_LITERAL;
 		lang_node->n_bytes = lang_len;
 		memcpy(serd_node_buffer(lang_node), lang, lang_len);
+		serd_node_check_padding(lang_node);
 	} else if (datatype) {
 		flags |= SERD_HAS_DATATYPE;
 		const size_t datatype_len = strlen(serd_node_buffer_c(datatype));
@@ -183,12 +209,14 @@ serd_node_new_literal(const char*     str,
 
 		SerdNode* datatype_node = node + 1 + (len / serd_node_align);
 		memcpy(datatype_node, datatype, sizeof(SerdNode) + datatype_len);
+		serd_node_check_padding(datatype_node);
 	} else {
 		node = serd_node_malloc(n_bytes, flags, SERD_LITERAL);
 		memcpy(serd_node_buffer(node), str, n_bytes);
 		node->n_bytes = n_bytes;
 	}
 
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -226,6 +254,10 @@ serd_node_zero_pad(SerdNode* node)
 	if (padded_size > size) {
 		memset(buf + size, 0, padded_size - size);
 	}
+
+	if (node->flags & (SERD_HAS_DATATYPE|SERD_HAS_LANGUAGE)) {
+		serd_node_zero_pad(serd_node_get_meta(node));
+	}
 }
 
 SerdNode*
@@ -236,13 +268,7 @@ serd_node_copy(const SerdNode* node)
 	}
 
 	const size_t size = serd_node_total_size(node);
-#ifndef NDEBUG
-	const size_t unpadded_size = node->n_bytes;
-	const size_t padded_size   = serd_node_pad_size(node->n_bytes);
-	for (size_t i = 0; i < padded_size - unpadded_size; ++i) {
-		assert(serd_node_buffer_c(node)[unpadded_size + i] == '\0');
-	}
-#endif
+	serd_node_check_padding(node);
 	SerdNode*    copy = (SerdNode*)calloc(1, size + 3);
 	memcpy(copy, node, size);
 	return copy;
@@ -383,6 +409,7 @@ serd_node_new_file_uri(const char* path, const char* hostname, bool escape)
 
 	SerdNode* node = serd_node_new_uri((const char*)buffer.buf);
 	free(buffer.buf);
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -402,6 +429,7 @@ serd_node_new_from_uri(const SerdURI* uri, const SerdURI* base)
 	serd_node_buffer(node)[actual_len] = '\0';
 	node->n_bytes = actual_len;
 
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -432,6 +460,7 @@ serd_node_new_relative_uri(const char*     str,
 	serd_node_buffer(node)[actual_len] = '\0';
 	node->n_bytes = actual_len;
 
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -501,6 +530,7 @@ serd_node_new_decimal(double d, unsigned frac_digits, const SerdNode* datatype)
 	}
 
 	memcpy(serd_node_get_meta(node), type, type_len);
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -532,6 +562,7 @@ serd_node_new_integer(int64_t i, const SerdNode* datatype)
 	} while ((abs_i /= 10) > 0);
 
 	memcpy(serd_node_get_meta(node), type, type_len);
+	serd_node_check_padding(node);
 	return node;
 }
 
@@ -559,6 +590,7 @@ serd_node_new_blob(const void*     buf,
 
 	node->n_bytes = len;
 	memcpy(serd_node_get_meta(node), type, type_len);
+	serd_node_check_padding(node);
 	return node;
 }
 
