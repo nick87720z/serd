@@ -109,7 +109,8 @@ typedef enum {
 	SERD_ERR_ID_CLASH,    ///< Encountered clashing blank node IDs
 	SERD_ERR_BAD_CURIE,   ///< Invalid CURIE (e.g. prefix does not exist)
 	SERD_ERR_INTERNAL,    ///< Unexpected internal error (should not happen)
-	SERD_ERR_OVERFLOW     ///< Stack overflow
+	SERD_ERR_OVERFLOW,    ///< Stack overflow
+	SERD_ERR_INVALID      ///< Invalid data
 } SerdStatus;
 
 /// RDF syntax type
@@ -1524,6 +1525,10 @@ serd_model_erase(SerdModel* model, SerdIter* iter);
 SERD_API
 SerdStatus
 serd_model_erase_range(SerdModel* model, SerdRange* range);
+
+SERD_API
+SerdStatus
+serd_validate(const SerdModel* model);
 
 /**
    @}

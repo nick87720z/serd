@@ -31,6 +31,7 @@ def options(ctx):
          'no-shared':    'do not build shared library',
          'static-progs': 'build programs as static binaries',
          'largefile':    'build with large file support on 32-bit systems',
+         'no-pcre':      'do not use PCRE, even if present',
          'no-posix':     'do not use POSIX functions, even if present'})
 
 def configure(conf):
@@ -63,6 +64,21 @@ def configure(conf):
                                    defines     = ['_POSIX_C_SOURCE=200809L'],
                                    mandatory   = False)
 
+    if not Options.options.no_pcre:
+        autowaf.check_pkg(conf, 'libpcre', uselib_store='PCRE', mandatory=False)
+
+    if conf.env.HAVE_PCRE:
+        if conf.check(cflags=['-pthread'], mandatory=False):
+            conf.env.PTHREAD_CFLAGS = ['-pthread']
+            if conf.env.CC_NAME != 'clang':
+                conf.env.PTHREAD_LINKFLAGS = ['-pthread']
+        elif conf.check(linkflags=['-lpthread'], mandatory=False):
+            conf.env.PTHREAD_CFLAGS    = []
+            conf.env.PTHREAD_LINKFLAGS = ['-lpthread']
+        else:
+            conf.env.PTHREAD_CFLAGS    = []
+            conf.env.PTHREAD_LINKFLAGS = []
+
     autowaf.set_lib_env(conf, 'serd', SERD_VERSION)
     conf.write_config_header('serd_config.h', remove=False)
 
@@ -92,6 +108,7 @@ lib_source = ['src/base64.c',
               'src/syntax.c',
               'src/system.c',
               'src/uri.c',
+              'src/validate.c',
               'src/world.c',
               'src/writer.c',
               'src/zix/btree.c',
@@ -112,6 +129,7 @@ def build(bld):
                 'includes':        ['.', './src'],
                 'cflags':          ['-fvisibility=hidden'],
                 'lib':             ['m'],
+                'use':             ['PCRE'],
                 'vnum':            SERD_VERSION,
                 'install_path':    '${LIBDIR}'}
     if bld.env.MSVC_COMPILER:
@@ -172,18 +190,24 @@ def build(bld):
 
     # Utilities
     if bld.env.BUILD_UTILS:
-        obj = bld(features     = 'c cprogram',
-                  source       = 'src/serdi.c',
-                  target       = 'serdi',
-                  includes     = ['.', './src'],
-                  use          = 'libserd',
-                  lib          = lib_args['lib'],
-                  install_path = '${BINDIR}')
-        if not bld.env.BUILD_SHARED or bld.env.STATIC_PROGS:
-            obj.use = 'libserd_static'
-        if bld.env.STATIC_PROGS:
-            obj.env.SHLIB_MARKER = obj.env.STLIB_MARKER
-            obj.linkflags        = ['-static']
+        for i in ['serdi', 'serd_validate']:
+            obj = bld(features     = 'c cprogram',
+                      source       = 'src/%s.c' % i,
+                      target       = i,
+                      includes     = ['.', './src'],
+                      use          = 'libserd',
+                      lib          = lib_args['lib'],
+                      linkflags    = [],
+                      install_path = '${BINDIR}')
+            if not bld.env.BUILD_SHARED or bld.env.STATIC_PROGS:
+                obj.use = 'libserd_static'
+            if bld.env.STATIC_PROGS:
+                obj.env.SHLIB_MARKER  = obj.env.STLIB_MARKER
+                obj.linkflags        += ['-static']
+            if i == 'serd_validate':
+                obj.uselib     = 'PCRE'
+                obj.cflags     = bld.env.PTHREAD_CFLAGS
+                obj.linkflags += bld.env.PTHREAD_LINKFLAGS
 
     # Documentation
     autowaf.build_dox(bld, 'SERD', SERD_VERSION, top, out)
