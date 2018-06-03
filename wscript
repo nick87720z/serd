@@ -74,6 +74,7 @@ def configure(conf):
 
 lib_source = ['src/base64.c',
               'src/byte_source.c',
+              'src/cursor.c',
               'src/env.c',
               'src/n3.c',
               'src/node.c',
@@ -143,6 +144,7 @@ def build(bld):
 
         # Test programs
         for prog in [('serdi_static', 'src/serdi.c'),
+                     ('cursor_test', 'tests/cursor_test.c'),
                      ('serd_test', 'tests/serd_test.c')]:
             bld(features     = 'c cprogram',
                 source       = prog[1],
@@ -406,6 +408,7 @@ def test(tst):
     srcdir = tst.path.abspath()
 
     with tst.group('Unit') as check:
+        check(['./cursor_test'])
         check(['./serd_test'])
 
     def test_syntax_io(check, in_name, check_name, lang):
