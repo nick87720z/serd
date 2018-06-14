@@ -400,35 +400,36 @@ main(void)
 		return 1;
 	}
 
-	SerdNode* u   = serd_new_uri("http://example.org/foo");
-	SerdNode* b   = serd_new_curie("invalid");
-	SerdNode* c   = serd_new_curie("eg.2:b");
-	SerdEnv*  env = serd_env_new(NULL);
-	serd_env_set_prefix_from_strings(env, "eg.2", "http://example.org/");
+	SerdNode* eg    = serd_new_uri("http://example.org/");
+	SerdNode* foo_u = serd_new_uri("http://example.org/foo");
+	SerdNode* foo_c = serd_new_curie("eg.2:foo");
+	SerdNode* b     = serd_new_curie("invalid");
+	SerdNode* pre   = serd_new_curie("eg.2");
+	SerdEnv*  env   = serd_env_new(NULL);
+	serd_env_set_prefix(env, pre, eg);
 
 	assert(!serd_env_get_base_uri(env));
 	assert(serd_env_set_base_uri(env, NULL));
 	assert(!serd_env_get_base_uri(env));
 	assert(serd_env_set_base_uri(env, hello));
 	assert(!serd_env_get_base_uri(env));
+
+	SerdNode* xnode = serd_env_expand(env, hello);
+	assert(!xnode);
+
 	serd_node_free(hello);
 
-	SerdStringView prefix;
-	SerdStringView suffix;
-	assert(serd_env_expand(env, b, &prefix, &suffix));
-
-	assert(!serd_env_expand_node(env, b));
-
-	SerdNode* xu = serd_env_expand_node(env, u);
+	SerdNode* xu = serd_env_expand(env, foo_c);
 	assert(!strcmp(serd_node_get_string(xu), "http://example.org/foo"));
 	serd_node_free(xu);
 
 	SerdNode* badpre = serd_new_curie("hm:what");
-	SerdNode* xbadpre = serd_env_expand_node(env, badpre);
+	SerdNode* xbadpre = serd_env_expand(env, badpre);
 	assert(!xbadpre);
+	serd_node_free(badpre);
 
-	SerdNode* xc = serd_env_expand_node(env, c);
-	assert(!strcmp(serd_node_get_string(xc), "http://example.org/b"));
+	SerdNode* xc = serd_env_expand(env, foo_c);
+	assert(serd_node_equals(xc, foo_u));
 	serd_node_free(xc);
 
 	assert(serd_env_set_prefix(env, NULL, NULL));
@@ -437,18 +438,22 @@ main(void)
 	assert(serd_env_set_prefix(env, b, lit));
 
 	int n_prefixes = 0;
-	serd_env_set_prefix_from_strings(env, "eg.2", "http://example.org/");
+	serd_env_set_prefix(env, pre, eg);
 	serd_env_foreach(env, count_prefixes, &n_prefixes);
 	assert(n_prefixes == 1);
 
 	SerdNode* shorter_uri = serd_new_uri("urn:foo");
-	const SerdNode* prefix_name;
-	assert(!serd_env_qualify(env, shorter_uri, &prefix_name, &suffix));
+	assert(!serd_env_qualify(env, shorter_uri));
 	serd_node_free(shorter_uri);
-	serd_node_free(badpre);
-	serd_node_free(c);
+
+	SerdNode* qualified = serd_env_qualify(env, foo_u);
+	assert(serd_node_equals(qualified, foo_c));
+	serd_node_free(qualified);
+	serd_node_free(foo_c);
+	serd_node_free(foo_u);
 	serd_node_free(b);
-	serd_node_free(u);
+	serd_node_free(pre);
+	serd_node_free(eg);
 
 	// Test SerdReader and SerdWriter
 
