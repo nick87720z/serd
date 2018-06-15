@@ -473,9 +473,9 @@ main(void)
 	serd_writer_chop_blank_prefix(writer, NULL);
 
 	const SerdSink* iface = serd_writer_get_sink(writer);
-	assert(iface->base(iface->handle, lit));
-	assert(iface->prefix(iface->handle, lit, lit));
-	assert(iface->end(iface->handle, NULL));
+	assert(serd_sink_write_base(iface, lit));
+	assert(serd_sink_write_prefix(iface, lit, lit));
+	assert(serd_sink_write_end(iface, NULL));
 	assert(serd_writer_get_env(writer) == env);
 
 	uint8_t buf[] = { 0xEF, 0xBF, 0xBD, 0 };
@@ -559,9 +559,11 @@ main(void)
 	// Rewind and test reader
 	fseek(fd, 0, SEEK_SET);
 
-	ReaderTest  rt     = { 0, NULL };
-	SerdSink    sink   = { &rt, NULL, NULL, test_sink, NULL };
-	SerdReader* reader = serd_reader_new(world, SERD_TURTLE, &sink, 4096);
+	ReaderTest rt   = { 0, NULL };
+	SerdSink*  sink = serd_sink_new(&rt);
+	serd_sink_set_statement_func(sink, test_sink);
+
+	SerdReader* reader = serd_reader_new(world, SERD_TURTLE, sink, 4096);
 	assert(reader);
 
 	SerdNode* g = serd_new_uri("http://example.org/");
@@ -582,6 +584,7 @@ main(void)
 	serd_reader_finish(reader);
 
 	serd_reader_free(reader);
+	serd_sink_free(sink);
 	fclose(fd);
 
 	serd_env_free(env);
