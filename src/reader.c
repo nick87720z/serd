@@ -261,7 +261,7 @@ serd_reader_read_file(SerdReader* reader,
 	}
 
 	SerdStatus st = serd_reader_start_stream(
-		reader, (SerdSource)fread, (SerdStreamErrorFunc)ferror,
+		reader, (SerdReadFunc)fread, (SerdStreamErrorFunc)ferror,
 		fd, path, SERD_PAGE_SIZE);
 
 	if (!st) {
@@ -295,7 +295,7 @@ skip_bom(SerdReader* me)
 
 SerdStatus
 serd_reader_start_stream(SerdReader*         reader,
-                         SerdSource          read_func,
+                         SerdReadFunc        read_func,
                          SerdStreamErrorFunc error_func,
                          void*               stream,
                          const char*         name,

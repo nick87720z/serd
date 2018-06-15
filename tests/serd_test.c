@@ -410,7 +410,7 @@ main(void)
 	assert(fd);
 
 	SerdWriter* writer = serd_writer_new(
-		SERD_TURTLE, (SerdStyle)0, env, NULL, serd_file_sink, fd);
+		SERD_TURTLE, (SerdStyle)0, env, NULL, (SerdWriteFunc)fwrite, fd);
 	assert(writer);
 
 	serd_writer_chop_blank_prefix(writer, "tmp");

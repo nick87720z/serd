@@ -7,6 +7,7 @@ serd (1.0.0) unstable;
   * Make serd_strtod API const-correct
   * Make nodes opaque
   * Remove half-baked serd_uri_to_path()
+  * Bring read/write interface closer to C standard
 
  -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
 
