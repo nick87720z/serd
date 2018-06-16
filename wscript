@@ -22,6 +22,7 @@ out     = 'build'       # Build directory
 
 def options(ctx):
     ctx.load('compiler_c')
+    ctx.load('compiler_cxx')
     opt = ctx.configuration_options()
     ctx.add_flags(
         opt,
@@ -36,8 +37,10 @@ def options(ctx):
 
 def configure(conf):
     conf.load('compiler_c', cache=True)
+    conf.load('compiler_cxx', cache=True)
     conf.load('autowaf', cache=True)
     autowaf.set_c_lang(conf, 'c99')
+    autowaf.set_cxx_lang(conf, 'c++11')
 
     conf.env.update({
         'BUILD_UTILS':  not Options.options.no_utils,
@@ -116,9 +119,14 @@ lib_source = ['src/base64.c',
               'src/zix/hash.c']
 
 def build(bld):
-    # C Headers
+    # Main C and C++ headers
     includedir = '${INCLUDEDIR}/serd-%s/serd' % SERD_MAJOR_VERSION
-    bld.install_files(includedir, bld.path.ant_glob('serd/*.h'))
+    bld.install_files(includedir, bld.path.ant_glob('serd/*.h*'))
+
+    # C++ detail headers
+    includedir = '${INCLUDEDIR}/serd-%s/serd' % SERD_MAJOR_VERSION
+    bld.install_files(includedir + '/detail',
+                      bld.path.ant_glob('serd/detail/*.hpp'))
 
     # Pkgconfig file
     autowaf.build_pc(bld, 'SERD', SERD_VERSION, SERD_MAJOR_VERSION, [],
@@ -158,6 +166,7 @@ def build(bld):
     if bld.env.BUILD_TESTS:
         test_args = {'includes':     ['.', './src'],
                      'cflags':       [''] if bld.env.NO_COVERAGE else ['--coverage'],
+                     'cxxflags':     [''] if bld.env.NO_COVERAGE else ['--coverage', '-fno-inline'],
                      'linkflags':    [''] if bld.env.NO_COVERAGE else ['--coverage'],
                      'lib':          lib_args['lib'],
                      'install_path': ''}
@@ -193,6 +202,13 @@ def build(bld):
                 obj.uselib     = 'PCRE'
                 obj.cflags    += bld.env.PTHREAD_CFLAGS
                 obj.linkflags += bld.env.PTHREAD_LINKFLAGS
+
+        bld(features     = 'cxx cxxprogram',
+            source       = 'tests/serd_cxx_test.cpp',
+            use          = 'libserd_profiled',
+            target       = 'serd_cxx_test',
+            defines      = defines,
+            **test_args)
 
     # Utilities
     if bld.env.BUILD_UTILS:
@@ -534,6 +550,7 @@ def test(tst):
         check(['./nodes_test'])
         check(['./overflow_test'])
         check(['./serd_test'])
+        check(['./serd_cxx_test'])
         check(['./terse_write_test'])
         check(['./read_chunk_test'])
 
