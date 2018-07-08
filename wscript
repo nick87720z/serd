@@ -73,6 +73,7 @@ def configure(conf):
          'Build unit tests':     bool(conf.env['BUILD_TESTS'])})
 
 lib_source = ['src/base64.c',
+              'src/byte_sink.c',
               'src/byte_source.c',
               'src/cursor.c',
               'src/env.c',
