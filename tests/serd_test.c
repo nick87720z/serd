@@ -337,7 +337,7 @@ main(void)
 	assert(!serd_new_uri(NULL));
 
 	SerdNode* not_a_uri = serd_new_string("hello");
-	SerdNode* root      = serd_new_uri("http://example.org/a/b/");
+	SerdNode* root      = serd_new_uri("http://example.org/a/b/ignored");
 	SerdNode* base      = serd_new_uri("http://example.org/a/b/c/");
 	SerdNode* nil       = serd_new_resolved_uri(NULL, base);
 	SerdNode* nil2      = serd_new_resolved_uri("", base);
@@ -354,6 +354,8 @@ main(void)
 	    check_rel_uri("http://example.org/a/", base, NULL, "../../") ||
 	    check_rel_uri("http://example.org/a/", base, root,
 	                  "http://example.org/a/") ||
+	    check_rel_uri("http://example.org/a/b/x", root, root,
+	                  "x") ||
 	    check_rel_uri("http://example.org/", base, NULL,
 	                  "../../../") ||
 	    check_rel_uri("http://drobilla.net/a", base, NULL,
