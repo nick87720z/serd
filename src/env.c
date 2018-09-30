@@ -20,6 +20,7 @@
 
 #include "serd/serd.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -226,13 +227,14 @@ serd_env_expand_in_place(const SerdEnv*  env,
 		return SERD_ERR_BAD_ARG;
 	}
 
-	const size_t            name_len = colon - str;
+	assert(colon >= str);
+	const size_t            name_len = (size_t)(colon - str);
 	const SerdPrefix* const prefix   = serd_env_find(env, str, name_len);
 	if (prefix) {
 		uri_prefix->buf = serd_node_get_string(prefix->uri);
 		uri_prefix->len = prefix->uri->n_bytes;
 		uri_suffix->buf = colon + 1;
-		uri_suffix->len = curie->n_bytes - (colon - str) - 1;
+		uri_suffix->len = curie->n_bytes - name_len - 1;
 		return SERD_SUCCESS;
 	}
 	return SERD_ERR_BAD_CURIE;
@@ -275,8 +277,9 @@ serd_env_expand(const SerdEnv* env, const SerdNode* node)
 		return serd_new_resolved_uri_i(
 			serd_node_get_string(node), &env->base_uri);
 	default:
-		return NULL;
+		break;
 	}
+	return NULL;
 }
 
 void

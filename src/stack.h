@@ -90,7 +90,7 @@ static inline void*
 serd_stack_push_aligned(SerdStack* stack, size_t n_bytes, size_t align)
 {
 	// Push padding if necessary
-	const uint8_t pad = align - stack->size % align;
+	const size_t pad = align - stack->size % align;
 	if (pad > 0) {
 		void* padding = serd_stack_push(stack, pad);
 		if (!padding) {
