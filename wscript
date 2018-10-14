@@ -172,6 +172,7 @@ def build(bld):
 
         # Test programs
         for prog in [('serdi_static', 'src/serdi.c'),
+                     ('serd_validate_static', 'src/serd_validate.c'),
                      ('base64_test', 'tests/base64_test.c'),
                      ('cursor_test', 'tests/cursor_test.c'),
                      ('statement_test', 'tests/statement_test.c'),
@@ -181,12 +182,16 @@ def build(bld):
                      ('nodes_test', 'tests/nodes_test.c'),
                      ('overflow_test', 'tests/overflow_test.c'),
                      ('model_test', 'tests/model_test.c')]:
-            bld(features     = 'c cprogram',
-                source       = prog[1],
-                use          = 'libserd_profiled',
-                target       = prog[0],
-                defines      = defines,
-                **test_args)
+            obj = bld(features     = 'c cprogram',
+                      source       = prog[1],
+                      use          = 'libserd_profiled',
+                      target       = prog[0],
+                      defines      = defines,
+                      **test_args)
+            if prog[0] == 'serd_validate_static':
+                obj.uselib     = 'PCRE'
+                obj.cflags    += bld.env.PTHREAD_CFLAGS
+                obj.linkflags += bld.env.PTHREAD_LINKFLAGS
 
     # Utilities
     if bld.env.BUILD_UTILS:
@@ -395,6 +400,16 @@ def _file_lines_equal(patha, pathb, subst_from='', subst_to=''):
 
     return True
 
+def _option_combinations(options):
+    "Return an iterator that cycles through all combinations of the given options"
+    import itertools
+
+    thru_options = []
+    for n in range(len(options) + 1):
+        thru_options += list(itertools.combinations(options, n))
+
+    return itertools.cycle(thru_options)
+
 def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
     import itertools
 
@@ -410,12 +425,9 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
 
     def run_tests(test_class, tests, expected_return):
         thru_flags   = [['-e'], ['-b'], ['-r', 'http://example.org/']]
-        thru_options = []
-        for n in range(len(thru_flags) + 1):
-            thru_options += list(itertools.combinations(thru_flags, n))
-        thru_options_iter = itertools.cycle(thru_options)
-
         osyntax = _test_output_syntax(test_class)
+        extra_options_iter = _option_combinations([['-f']])
+        thru_options_iter = _option_combinations(thru_flags)
         tests_name = '%s.%s' % (testdir, test_class[test_class.find('#') + 1:])
         with ctx.group(tests_name) as check:
             for test in sorted(tests):
@@ -423,7 +435,10 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
                 action      = os.path.join('tests', testdir, os.path.basename(action_node))
                 rel_action  = os.path.join(os.path.relpath(srcdir), action)
                 uri         = base_uri + os.path.basename(action)
-                command     = [serdi, '-a'] + options + [rel_action, uri]
+                command     = ([serdi, '-a'] +
+                               options +
+                               flatten_options(next(extra_options_iter)) +
+                               [rel_action, uri])
 
                 # Run strict test
                 if expected_return == 0:
@@ -470,6 +485,27 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
         if test_class.startswith(ns_rdftest):
             expected = 1 if 'Negative' in test_class else 0
             run_tests(test_class, instances, expected)
+
+def validation_test_suite(tst, base_uri, testdir, isyntax, osyntax, options=''):
+    srcdir = tst.path.abspath()
+    schemas = glob.glob(os.path.join(srcdir, 'schemas', '*.ttl'))
+
+    test_class = 'http://drobilla.net/ns/serd#TestTurtleNegativeValidate'
+    mf         = 'http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#'
+    mf_path    = os.path.join(srcdir, 'tests', testdir, 'manifest.ttl')
+
+    model, instances = _load_rdf(mf_path)
+    with tst.group('validation') as check:
+        for test in sorted(instances[test_class]):
+            action_node = model[test][mf + 'action'][0]
+            action      = os.path.join('tests', 'validate', os.path.basename(action_node))
+            rel_action  = os.path.join(os.path.relpath(srcdir), action)
+            uri         = base_uri + os.path.basename(action)
+            command     = ['./serd_validate_static'] + schemas + [rel_action]
+
+            if (tst.env.HAVE_PCRE
+                or os.path.basename(action_node) != 'bad-literal-pattern.ttl'):
+                check(command, expected=11, name=action)
 
 def test(tst):
     import tempfile
@@ -521,6 +557,9 @@ def test(tst):
         with tempfile.TemporaryFile(mode='r') as stdin:
             check([serdi, '-'], stdin=stdin)
 
+        check(['./serd_validate_static', '-v'])
+        check(['./serd_validate_static', '-h'])
+
     with tst.group('BadCommands', expected=1, stderr=autowaf.NONEMPTY) as check:
         check([serdi])
         check([serdi, '/no/such/file'])
@@ -540,6 +579,11 @@ def test(tst):
         check([serdi, '-r'])
         check([serdi, '-z'])
 
+        check(['./serd_validate_static'])
+        check(['./serd_validate_static', '-k'])
+        check(['./serd_validate_static', '-k', '-1'])
+        check(['./serd_validate_static', '-q', '-1'])
+
     with tst.group('IoErrors', expected=1) as check:
         check([serdi, '-e', 'file://%s/' % srcdir], name='Read directory')
         check([serdi, 'file://%s/' % srcdir], name='Bulk read directory')
@@ -551,6 +595,14 @@ def test(tst):
     serd_base = 'http://drobilla.net/sw/serd/tests/'
     test_suite(tst, serd_base + 'good/', 'good', None, 'Turtle')
     test_suite(tst, serd_base + 'bad/', 'bad', None, 'Turtle')
+
+    # Serd validation test suite
+    with open('validation_earl.ttl', 'w') as report:
+        serd_base = 'http://drobilla.net/sw/serd/tests/'
+        report.write('@prefix earl: <http://www.w3.org/ns/earl#> .\n'
+                     '@prefix dc: <http://purl.org/dc/elements/1.1/> .\n')
+        validation_test_suite(tst, serd_base + 'validate/', 'validate',
+                              None, 'Turtle', 'NTriples')
 
     # Standard test suites
     with open('earl.ttl', 'w') as report:
