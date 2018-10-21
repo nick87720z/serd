@@ -11,6 +11,7 @@ serd (1.0.0) unstable;
   * Add SerdWorld for shared library state
   * Use a fixed-size reader stack
   * Simplify writer style options
+  * Simplify streaming API and improve pretty printing
 
  -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
 
