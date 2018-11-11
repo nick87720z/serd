@@ -152,27 +152,29 @@ push_byte(SerdReader* reader, SerdNode* node, const uint8_t c)
 {
 	SERD_STACK_ASSERT_TOP(reader, node);
 	uint8_t* const s = (uint8_t*)serd_stack_push(&reader->stack, 1);
-	if (!s) {
-		return SERD_ERR_OVERFLOW;
+
+	if (s) {
+		++node->n_bytes;
+		*(s - 1) = c;
+		*s       = '\0';
 	}
 
-	++node->n_bytes;
-	*(s - 1) = c;
-	*s       = '\0';
-	return SERD_SUCCESS;
+	return s ? SERD_SUCCESS : SERD_ERR_OVERFLOW;
 }
 
 static inline SerdStatus
-push_bytes(SerdReader* reader, SerdNode* ref, const uint8_t* bytes, unsigned len)
+push_bytes(SerdReader*    reader,
+           SerdNode*      ref,
+           const uint8_t* bytes,
+           unsigned       len)
 {
-	if (reader->stack.buf_size < reader->stack.size + len) {
-		return SERD_ERR_OVERFLOW;
+	const bool has_space = reader->stack.buf_size >= reader->stack.size + len;
+	if (has_space) {
+		for (unsigned i = 0; i < len; ++i) {
+			push_byte(reader, ref, bytes[i]);
+		}
 	}
-
-	for (unsigned i = 0; i < len; ++i) {
-		push_byte(reader, ref, bytes[i]);
-	}
-	return SERD_SUCCESS;
+	return has_space ? SERD_SUCCESS : SERD_ERR_OVERFLOW;
 }
 
 #endif // SERD_READER_H
