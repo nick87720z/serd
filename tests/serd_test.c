@@ -203,6 +203,8 @@ main(void)
 	}
 
 	// Test serd_new_blob
+	assert(!serd_new_blob(NULL, 0, true, NULL));
+	assert(!serd_new_blob("data", 0, true, NULL));
 	for (size_t size = 1; size < 256; ++size) {
 		uint8_t* data = (uint8_t*)malloc(size);
 		for (size_t i = 0; i < size; ++i) {
@@ -298,6 +300,8 @@ main(void)
 	assert(!serd_new_plain_literal(NULL, NULL));
 	assert(!serd_new_typed_literal(NULL, NULL));
 
+	assert(!serd_new_typed_literal("bad type", hello));
+
 	SerdNode* hello2 = serd_new_string("hello\"");
 	assert(serd_node_get_length(hello2) == 6 &&
 	       serd_node_get_flags(hello2) == SERD_HAS_QUOTE &&
@@ -306,6 +310,10 @@ main(void)
 	SerdNode* hello3 = serd_new_plain_literal("hello\"", NULL);
 	assert(serd_node_equals(hello2, hello3));
 
+	SerdNode* hello4 = serd_new_typed_literal("hello\"", NULL);
+	assert(serd_node_equals(hello4, hello2));
+
+	serd_node_free(hello4);
 	serd_node_free(hello3);
 	serd_node_free(hello2);
 
