@@ -450,7 +450,8 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
                                    expected=expected_return,
                                    name=action)
 
-                if result and ((mf + 'result') in model[test]):
+                if (result and expected_return == 0 and
+                    ((mf + 'result') in model[test])):
                     # Check output against test suite
                     check_uri  = model[test][mf + 'result'][0]
                     check_path = ctx.src_path(file_uri_to_path(check_uri))
@@ -467,9 +468,10 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
                     report.write(earl_assertion(test, result, asserter))
 
                 if expected_return != 0:
-                    # Run lax parsing test for negative test (may still fail)
-                    check([command[0]] + ['-l'] + command[1:],
-                          expected=None, name=action + ' lax')
+                    if '-l' not in options:
+                        # Run lax parsing test for negative test (may still fail)
+                        check([command[0]] + ['-l'] + command[1:],
+                              expected=None, name=action + ' lax')
                 else:
                     # Run model test for positive test (must succeed)
                     model_out_path = action + '.model.out'
@@ -483,7 +485,7 @@ def test_suite(ctx, base_uri, testdir, report, isyntax, options=[]):
     ns_rdftest = 'http://www.w3.org/ns/rdftest#'
     for test_class, instances in instances.items():
         if test_class.startswith(ns_rdftest):
-            expected = 1 if 'Negative' in test_class else 0
+            expected = 1 if '-l' not in options and 'Negative' in test_class else 0
             run_tests(test_class, instances, expected)
 
 def validation_test_suite(tst, base_uri, testdir, isyntax, osyntax, options=''):
@@ -511,7 +513,8 @@ def test(tst):
     import tempfile
 
     # Create test output directories
-    for i in ['bad', 'good', 'TurtleTests', 'NTriplesTests', 'NQuadsTests', 'TriGTests']:
+    for i in ['bad', 'good', 'lax',
+              'TurtleTests', 'NTriplesTests', 'NQuadsTests', 'TriGTests']:
         try:
             test_dir = os.path.join('tests', i)
             os.makedirs(test_dir)
@@ -595,6 +598,8 @@ def test(tst):
     serd_base = 'http://drobilla.net/sw/serd/tests/'
     test_suite(tst, serd_base + 'good/', 'good', None, 'Turtle')
     test_suite(tst, serd_base + 'bad/', 'bad', None, 'Turtle')
+    test_suite(tst, serd_base + 'lax/', 'lax', None, 'Turtle', ['-l'])
+    test_suite(tst, serd_base + 'lax/', 'lax', None, 'Turtle')
 
     # Serd validation test suite
     with open('validation_earl.ttl', 'w') as report:

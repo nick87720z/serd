@@ -303,7 +303,7 @@ static SerdStatus
 read_STRING_LITERAL_LONG(SerdReader* reader, SerdNode* dest, uint8_t q)
 {
 	SerdStatus st = SERD_SUCCESS;
-	while (!reader->status) {
+	while (!reader->status && !(st && reader->strict)) {
 		const uint8_t c = peek_byte(reader);
 		if (c == '\\') {
 			eat_byte_safe(reader, c);
@@ -341,7 +341,7 @@ static SerdStatus
 read_STRING_LITERAL(SerdReader* reader, SerdNode* dest, uint8_t q)
 {
 	SerdStatus st = SERD_SUCCESS;
-	while (!reader->status) {
+	while (!reader->status && !(st && reader->strict)) {
 		const uint8_t c    = peek_byte(reader);
 		uint32_t      code = 0;
 		switch (c) {
