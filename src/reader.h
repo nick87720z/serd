@@ -61,7 +61,6 @@ struct SerdReaderImpl {
 	SerdStack                stack;
 	SerdSyntax               syntax;
 	unsigned                 next_id;
-	SerdStatus               status;
 	uint8_t*                 buf;
 	char*                    bprefix;
 	size_t                   bprefix_len;
@@ -106,11 +105,8 @@ peek_byte(SerdReader* reader)
 static inline uint8_t
 eat_byte(SerdReader* reader)
 {
-	const uint8_t    c  = peek_byte(reader);
-	const SerdStatus st = serd_byte_source_advance(&reader->source);
-	if (st) {
-		reader->status = st;
-	}
+	const uint8_t c = peek_byte(reader);
+	serd_byte_source_advance(&reader->source);
 	return c;
 }
 

@@ -87,13 +87,14 @@ serd_byte_source_advance(SerdByteSource* source)
 	}
 
 	if (source->from_stream) {
-		source->eof = false;
 		if (source->page_size > 1) {
 			if (++source->read_head == source->page_size) {
+				source->eof = false;
 				st = serd_byte_source_page(source);
 			}
 		} else {
 			if (!source->read_func(&source->read_byte, 1, 1, source->stream)) {
+				source->eof = true;
 				st = source->error_func(source->stream) ? SERD_ERR_UNKNOWN
 				                                        : SERD_FAILURE;
 			}
@@ -102,7 +103,7 @@ serd_byte_source_advance(SerdByteSource* source)
 		++source->read_head; // Move to next character in string
 	}
 
-	return source->eof ? SERD_FAILURE : st;
+	return st ? st : source->eof ? SERD_FAILURE : SERD_SUCCESS;
 }
 
 #endif  // SERD_BYTE_SOURCE_H
