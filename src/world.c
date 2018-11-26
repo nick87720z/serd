@@ -34,14 +34,21 @@
 
 #define BLANK_CHARS 11
 
+static const char* const log_level_strings[] = { "emergengy", "alert",
+	                                             "critical",  "error",
+	                                             "warning",   "note",
+	                                             "info",      "debug" };
+
 FILE*
 serd_world_fopen(SerdWorld* world, const char* path, const char* mode)
 {
 	FILE* fd = fopen(path, mode);
 	if (!fd) {
-		serd_world_errorf(world, SERD_ERR_INTERNAL,
-		                  "failed to open file %s (%s)\n",
-		                  path, strerror(errno));
+		char errno_str[24];
+		snprintf(errno_str, sizeof(errno_str), "%d", errno);
+		const SerdLogField fields[] = { { "ERRNO", errno_str } };
+		serd_world_logf(world, "serd", SERD_LOG_LEVEL_ERR, fields, 1,
+		                "failed to open file %s (%s)\n", path, strerror(errno));
 		return NULL;
 	}
 #if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FILENO)
@@ -50,32 +57,104 @@ serd_world_fopen(SerdWorld* world, const char* path, const char* mode)
 	return fd;
 }
 
-SerdStatus
-serd_world_error(const SerdWorld* world, const SerdError* e)
+static const SerdLogField*
+find_field(const SerdLogField* fields, size_t n_fields, const char* key)
 {
-	if (world->error_sink) {
-		world->error_sink(world->error_handle, e);
-	} else {
-		fprintf(stderr, "error: ");
-		if (e->cursor) {
-			fprintf(stderr,
-			        "%s:%u:%u: ",
-			        serd_node_get_string(e->cursor->file),
-			        e->cursor->line,
-			        e->cursor->col);
+	for (size_t i = 0; i < n_fields; ++i) {
+		if (!strcmp(fields[i].key, key)) {
+			return &fields[i];
 		}
-		vfprintf(stderr, e->fmt, *e->args);
 	}
-	return e->status;
+
+	return NULL;
 }
 
 SerdStatus
-serd_world_errorf(const SerdWorld* world, SerdStatus st, const char* fmt, ...)
+serd_world_vlogf(const SerdWorld*    world,
+                 const char*         domain,
+                 SerdLogLevel        level,
+                 const SerdLogField* fields,
+                 size_t              n_fields,
+                 const char*         fmt,
+                 va_list             args)
+{
+	if (world->msg_func) {
+		world->msg_func(
+			world->msg_handle, domain, level, fields, n_fields, fmt, args);
+	} else {
+		fprintf(stderr, "%s: ", log_level_strings[level]);
+		const SerdLogField* file = find_field(fields, n_fields, "SERD_FILE");
+		const SerdLogField* line = find_field(fields, n_fields, "SERD_LINE");
+		const SerdLogField* col  = find_field(fields, n_fields, "SERD_COL");
+		if (file && line && col) {
+			fprintf(stderr, "%s:%s:%s: ", file->value, line->value, col->value);
+		}
+		vfprintf(stderr, fmt, args);
+	}
+
+	return SERD_SUCCESS;
+}
+
+SerdStatus
+serd_world_logf(const SerdWorld*    world,
+                const char*         domain,
+                SerdLogLevel        level,
+                const SerdLogField* fields,
+                size_t              n_fields,
+                const char*         fmt,
+                ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	const SerdError e = { st, NULL, fmt, &args };
-	serd_world_error(world, &e);
+	serd_world_vlogf(world, domain, level, fields, n_fields, fmt, args);
+	va_end(args);
+	return SERD_SUCCESS;
+}
+
+SerdStatus
+serd_world_vlogf_internal(const SerdWorld*  world,
+                          SerdStatus        st,
+                          SerdLogLevel      level,
+                          const SerdCursor* cursor,
+                          const char*       fmt,
+                          va_list           args)
+{
+	char st_str[8];
+	snprintf(st_str, sizeof(st_str), "%d", st);
+	if (cursor) {
+		const char* file = serd_node_get_string(serd_cursor_get_name(cursor));
+
+		char line[24];
+		snprintf(line, sizeof(line), "%u", serd_cursor_get_line(cursor));
+
+		char col[24];
+		snprintf(col, sizeof(col), "%u", serd_cursor_get_column(cursor));
+
+		const SerdLogField fields[] = { { "SERD_STATUS", st_str },
+		                                { "SERD_FILE", file },
+		                                { "SERD_LINE", line },
+		                                { "SERD_COL", col } };
+
+		serd_world_vlogf(world, "serd", level, fields, 4, fmt, args);
+	} else {
+		const SerdLogField fields[] = { { "SERD_STATUS", st_str } };
+		serd_world_vlogf(world, "serd", level, fields, 1, fmt, args);
+	}
+
+	return st;
+}
+
+SerdStatus
+serd_world_logf_internal(const SerdWorld*  world,
+                         SerdStatus        st,
+                         SerdLogLevel      level,
+                         const SerdCursor* cursor,
+                         const char*       fmt,
+                         ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	serd_world_vlogf_internal(world, st, level, cursor, fmt, args);
 	va_end(args);
 	return st;
 }
@@ -125,10 +204,10 @@ serd_world_get_blank(SerdWorld* world)
 }
 
 void
-serd_world_set_error_sink(SerdWorld*    world,
-                          SerdErrorSink error_sink,
-                          void*         handle)
+serd_world_set_message_func(SerdWorld*      world,
+                            SerdMessageFunc msg_func,
+                            void*           handle)
 {
-	world->error_sink   = error_sink;
-	world->error_handle = handle;
+	world->msg_func   = msg_func;
+	world->msg_handle = handle;
 }

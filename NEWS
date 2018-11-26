@@ -12,6 +12,7 @@ serd (1.0.0) unstable;
   * Use a fixed-size reader stack
   * Simplify writer style options
   * Simplify streaming API and improve pretty printing
+  * Add logging functions to public API
 
  -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
 

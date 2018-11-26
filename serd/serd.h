@@ -42,6 +42,12 @@
 #    define SERD_API
 #endif
 
+#if defined(__GNUC__)
+#    define SERD_LOG_FUNC(fmt, arg1) __attribute__((format(printf, fmt, arg1)))
+#else
+#    define SERD_LOG_FUNC(fmt, arg1)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -199,13 +205,17 @@ typedef struct {
 	size_t len;  ///< Size of buffer in bytes
 } SerdBuffer;
 
-/// An error description
-typedef struct {
-	SerdStatus        status;  /**< Error code */
-	const SerdCursor* cursor;  /**< Origin of error, or NULL */
-	const char*       fmt;     /**< Message format string (printf style) */
-	va_list*          args;    /**< Arguments for fmt */
-} SerdError;
+/// Log message level, compatible with syslog
+typedef enum {
+	SERD_LOG_LEVEL_EMERG,    ///< Emergency, system is unusable
+	SERD_LOG_LEVEL_ALERT,    ///< Action must be taken immediately
+	SERD_LOG_LEVEL_CRIT,     ///< Critical condition
+	SERD_LOG_LEVEL_ERR,      ///< Error
+	SERD_LOG_LEVEL_WARNING,  ///< Warning
+	SERD_LOG_LEVEL_NOTICE,   ///< Normal but significant condition
+	SERD_LOG_LEVEL_INFO,     ///< Informational message
+	SERD_LOG_LEVEL_DEBUG     ///< Debug message
+} SerdLogLevel;
 
 /**
    A parsed URI
@@ -720,16 +730,7 @@ serd_node_free(SerdNode* node);
 */
 
 /**
-   Sink (callback) for errors.
-
-   @param handle Handle for user data.
-   @param error Error description.
-*/
-typedef SerdStatus (*SerdErrorSink)(void*            handle,
-                                    const SerdError* error);
-
-/**
-   Sink (callback) for base URI changes
+   Sink function for base URI changes
 
    Called whenever the base URI of the serialisation changes.
 */
@@ -805,16 +806,84 @@ const SerdNode*
 serd_world_get_blank(SerdWorld* world);
 
 /**
-   Set a function to be called when errors occur.
+   @}
+   @name Logging
+   @{
+*/
 
-   The `error_sink` will be called with `handle` as its first argument.  If
-   no error function is set, errors are printed to stderr.
+/** A structured log field
+ *
+ * This can be used to pass additional information along with log messages.
+ * Syslog-compatible keys should be used where possible, otherwise, keys should
+ * be namespaced to prevent clashes.
+ *
+ * Serd itself uses the following keys:
+ *   - ERRNO
+ *   - SERD_COL
+ *   - SERD_DOMAIN
+ *   - SERD_FILE
+ *   - SERD_LINE
+ *   - SERD_STATUS
+ */
+typedef struct {
+	const char* key;    ///< Field name
+	const char* value;  ///< Field value
+} SerdLogField;
+
+/**
+   Sink function for log messages
+
+   @param handle Handle for user data.
+   @param domain Message domain (typically a library or program name)
+   @param level Log level
+   @param fields Extra log fields
+   @param n_fields Number of entries in `fields`
+   @param fmt Message format string (printf style)
+   @param args Arguments corresponding to fmt (printf style)
+*/
+typedef SerdStatus (*SerdMessageFunc)(void*               handle,
+                                      const char*         domain,
+                                      SerdLogLevel        level,
+                                      const SerdLogField* fields,
+                                      size_t              n_fields,
+                                      const char*         fmt,
+                                      va_list             args);
+
+/**
+   Set a function to be called with log messages (typically errors)
+
+   The `msg_func` will be called with `handle` as its first argument.  If
+   no function is set, messages are printed to stderr.
 */
 SERD_API
 void
-serd_world_set_error_sink(SerdWorld*    world,
-                          SerdErrorSink error_sink,
-                          void*         handle);
+serd_world_set_message_func(SerdWorld*      world,
+                            SerdMessageFunc msg_func,
+                            void*           handle);
+
+/// Write a message to the log
+SERD_API
+SERD_LOG_FUNC(6, 0)
+SerdStatus
+serd_world_vlogf(const SerdWorld*    world,
+                 const char*         domain,
+                 SerdLogLevel        level,
+                 const SerdLogField* fields,
+                 size_t              n_fields,
+                 const char*         fmt,
+                 va_list             args);
+
+/// Write a message to the log
+SERD_API
+SERD_LOG_FUNC(6, 7)
+SerdStatus
+serd_world_logf(const SerdWorld*    world,
+                const char*         domain,
+                SerdLogLevel        level,
+                const SerdLogField* fields,
+                size_t              n_fields,
+                const char*         fmt,
+                ...);
 
 /**
    @}

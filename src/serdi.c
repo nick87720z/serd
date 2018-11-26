@@ -25,6 +25,7 @@
 #endif
 
 #include <limits.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,10 +77,21 @@ missing_arg(const char* name, char opt)
 }
 
 static SerdStatus
-quiet_error_sink(void* handle, const SerdError* e)
+quiet_error_func(void*               handle,
+                 const char*         domain,
+                 SerdLogLevel        level,
+                 const SerdLogField* fields,
+                 size_t              n_fields,
+                 const char*         fmt,
+                 va_list             args)
 {
 	(void)handle;
-	(void)e;
+	(void)domain;
+	(void)level;
+	(void)fields;
+	(void)n_fields;
+	(void)fmt;
+	(void)args;
 	return SERD_SUCCESS;
 }
 
@@ -219,7 +231,7 @@ main(int argc, char** argv)
 
 	serd_reader_set_strict(reader, !lax);
 	if (quiet) {
-		serd_world_set_error_sink(world, quiet_error_sink, NULL);
+		serd_world_set_message_func(world, quiet_error_func, NULL);
 	}
 
 	SerdNode* root = serd_new_uri(root_uri);
