@@ -66,6 +66,14 @@ serd_node_pad_size(const size_t n_bytes)
 }
 
 static const SerdNode*
+serd_node_maybe_get_meta_c(const SerdNode* node)
+{
+	return (node->flags & (SERD_HAS_LANGUAGE | SERD_HAS_DATATYPE))
+		? (node + 1 + (serd_node_pad_size(node->n_bytes) / serd_node_align))
+		: NULL;
+}
+
+static const SerdNode*
 serd_node_get_meta_c(const SerdNode* node)
 {
 	return node + 1 + (serd_node_pad_size(node->n_bytes) / serd_node_align);
@@ -301,6 +309,23 @@ serd_node_equals(const SerdNode* a, const SerdNode* b)
 		return !memcmp(a, b, a_size);
 	}
 	return false;
+}
+
+int
+serd_node_compare(const SerdNode* a, const SerdNode* b)
+{
+	if (a == b) {
+		return 0;
+	} else if (!a || !b) {
+		return (a < b) ? -1 : 1;
+	} else if (a->type != b->type) {
+		return (a->type < b->type) ? -1 : 1;
+	}
+
+	const int cmp = strcmp(serd_node_get_string(a), serd_node_get_string(b));
+	return cmp ? cmp
+	           : serd_node_compare(serd_node_maybe_get_meta_c(a),
+	                               serd_node_maybe_get_meta_c(b));
 }
 
 static size_t
