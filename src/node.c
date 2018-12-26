@@ -50,6 +50,7 @@ typedef struct StaticNode {
 
 DEFINE_XSD_NODE(decimal)
 DEFINE_XSD_NODE(integer)
+DEFINE_XSD_NODE(boolean)
 DEFINE_XSD_NODE(base64Binary)
 
 static SerdNode*
@@ -616,6 +617,12 @@ serd_new_integer(int64_t i, const SerdNode* datatype)
 	memcpy(serd_node_get_meta(node), type, type_len);
 	serd_node_check_padding(node);
 	return node;
+}
+
+SerdNode*
+serd_new_boolean(bool b)
+{
+	return serd_new_typed_literal(b ? "true" : "false", &serd_xsd_boolean.node);
 }
 
 SerdNode*

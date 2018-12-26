@@ -197,6 +197,19 @@ main(void)
 		serd_node_free(node);
 	}
 
+	// Test serd_new_boolean
+	SerdNode* true_node = serd_new_boolean(true);
+	assert(!strcmp(serd_node_get_string(true_node), "true"));
+	assert(!strcmp(serd_node_get_string(serd_node_get_datatype(true_node)),
+	               NS_XSD "boolean"));
+	serd_node_free(true_node);
+
+	SerdNode* false_node = serd_new_boolean(false);
+	assert(!strcmp(serd_node_get_string(false_node), "false"));
+	assert(!strcmp(serd_node_get_string(serd_node_get_datatype(false_node)),
+	               NS_XSD "boolean"));
+	serd_node_free(false_node);
+
 	// Test serd_new_blob
 	assert(!serd_new_blob(NULL, 0, true, NULL));
 	assert(!serd_new_blob("data", 0, true, NULL));
