@@ -402,6 +402,7 @@ main(void)
 
 	SerdNode* eg    = serd_new_uri("http://example.org/");
 	SerdNode* foo_u = serd_new_uri("http://example.org/foo");
+	SerdNode* empty = serd_new_uri("");
 	SerdNode* foo_c = serd_new_curie("eg.2:foo");
 	SerdNode* b     = serd_new_curie("invalid");
 	SerdNode* pre   = serd_new_curie("eg.2");
@@ -410,7 +411,7 @@ main(void)
 
 	assert(!serd_env_get_base_uri(env));
 	assert(serd_env_set_base_uri(env, NULL));
-	assert(!serd_env_get_base_uri(env));
+	assert(serd_env_set_base_uri(env, empty));
 	assert(serd_env_set_base_uri(env, hello));
 	assert(!serd_env_get_base_uri(env));
 
@@ -465,6 +466,7 @@ main(void)
 
 	serd_node_free(qualified);
 	serd_node_free(foo_c);
+	serd_node_free(empty);
 	serd_node_free(foo_u);
 	serd_node_free(b);
 	serd_node_free(pre);
