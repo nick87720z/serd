@@ -443,10 +443,11 @@ main(void)
 	assert(serd_env_set_prefix(env, b, lit));
 
 	size_t    n_prefixes          = 0;
-	SerdSink* count_prefixes_sink = serd_sink_new(&n_prefixes);
+	SerdSink* count_prefixes_sink = serd_sink_new(&n_prefixes, NULL);
 	serd_sink_set_prefix_func(count_prefixes_sink, count_prefixes);
 	serd_env_set_prefix(env, pre, eg);
 	serd_env_write_prefixes(env, count_prefixes_sink);
+	serd_sink_free(count_prefixes_sink);
 	assert(n_prefixes == 1);
 
 	SerdNode* shorter_uri = serd_new_uri("urn:foo");
@@ -592,7 +593,7 @@ main(void)
 	fseek(fd, 0, SEEK_SET);
 
 	size_t    n_statements = 0;
-	SerdSink* sink         = serd_sink_new(&n_statements);
+	SerdSink* sink         = serd_sink_new(&n_statements, NULL);
 	serd_sink_set_statement_func(sink, count_statements);
 
 	SerdReader* reader = serd_reader_new(world, SERD_TURTLE, sink, 4096);

@@ -105,7 +105,6 @@ struct SerdWriterImpl {
 	SerdSink        iface;
 	SerdSyntax      syntax;
 	SerdWriterFlags flags;
-	SerdEnv*        env;
 	SerdNode*       root_node;
 	SerdURI         root_uri;
 	SerdStack       anon_stack;
@@ -520,6 +519,8 @@ write_uri_node(SerdWriter* const        writer,
                const SerdField          field,
                const SerdStatementFlags flags)
 {
+	SerdEnv* const env = writer->iface.env;
+
 	writer->last_sep = SEP_NONE;
 	if (is_inline_start(writer, field, flags)) {
 		write_sep(writer, SEP_ANON_BEGIN);
@@ -537,7 +538,7 @@ write_uri_node(SerdWriter* const        writer,
 	           serd_node_equals(node, writer->world->rdf_nil)) {
 		return sink("()", 2, writer) == 2;
 	} else if (has_scheme && supports_abbrev(writer) &&
-	           serd_env_qualify_in_place(writer->env, node, &prefix, &suffix) &&
+	           serd_env_qualify_in_place(env, node, &prefix, &suffix) &&
 	           is_name(serd_node_get_string(prefix), serd_node_get_length(prefix)) &&
 	           is_name(suffix.buf, suffix.len)) {
 		write_uri_from_node(writer, prefix);
@@ -547,8 +548,8 @@ write_uri_node(SerdWriter* const        writer,
 	}
 
 	sink("<", 1, writer);
-	if (serd_env_get_base_uri(writer->env)) {
-		const SerdURI* base_uri = serd_env_get_parsed_base_uri(writer->env);
+	if (serd_env_get_base_uri(env)) {
+		const SerdURI* base_uri = serd_env_get_parsed_base_uri(env);
 		SerdURI uri, abs_uri;
 		serd_uri_parse(node_str, &uri);
 		serd_uri_resolve(&uri, base_uri, &abs_uri);
@@ -587,7 +588,7 @@ write_curie(SerdWriter* const        writer,
 	case SERD_NTRIPLES:
 	case SERD_NQUADS:
 		if ((st = serd_env_expand_in_place(
-			     writer->env, node, &prefix, &suffix))) {
+			     writer->iface.env, node, &prefix, &suffix))) {
 			serd_world_errorf(writer->world,
 			                  st,
 			                  "undefined namespace prefix `%s'\n",
@@ -910,7 +911,6 @@ serd_writer_new(SerdWorld*      world,
 	writer->world        = world;
 	writer->syntax       = syntax;
 	writer->flags        = flags;
-	writer->env          = env;
 	writer->root_node    = NULL;
 	writer->root_uri     = SERD_URI_NULL;
 	writer->anon_stack   = serd_stack_new(SERD_PAGE_SIZE);
@@ -920,6 +920,7 @@ serd_writer_new(SerdWorld*      world,
 	writer->empty        = true;
 
 	writer->iface.handle    = writer;
+	writer->iface.env       = env;
 	writer->iface.base      = (SerdBaseSink)serd_writer_set_base_uri;
 	writer->iface.prefix    = (SerdPrefixSink)serd_writer_set_prefix;
 	writer->iface.statement = (SerdStatementSink)serd_writer_write_statement;
@@ -946,20 +947,17 @@ SerdStatus
 serd_writer_set_base_uri(SerdWriter*     writer,
                          const SerdNode* uri)
 {
-	if (!serd_env_set_base_uri(writer->env, uri)) {
-		if (writer->syntax == SERD_TURTLE || writer->syntax == SERD_TRIG) {
-			if (ctx(writer, SERD_GRAPH) || ctx(writer, SERD_SUBJECT)) {
-				sink(" .\n\n", 4, writer);
-				reset_context(writer, true);
-			}
-			sink("@base <", 7, writer);
-			sink(serd_node_get_string(uri), uri->n_bytes, writer);
-			sink("> .\n", 4, writer);
+	if (writer->syntax == SERD_TURTLE || writer->syntax == SERD_TRIG) {
+		if (ctx(writer, SERD_GRAPH) || ctx(writer, SERD_SUBJECT)) {
+			sink(" .\n\n", 4, writer);
+			reset_context(writer, true);
 		}
-		writer->indent = 0;
-		return reset_context(writer, true);
+		sink("@base <", 7, writer);
+		sink(serd_node_get_string(uri), uri->n_bytes, writer);
+		sink("> .\n", 4, writer);
 	}
-	return SERD_ERR_UNKNOWN;
+	writer->indent = 0;
+	return reset_context(writer, true);
 }
 
 SerdStatus
@@ -983,22 +981,19 @@ serd_writer_set_prefix(SerdWriter*     writer,
                        const SerdNode* name,
                        const SerdNode* uri)
 {
-	if (!serd_env_set_prefix(writer->env, name, uri)) {
-		if (writer->syntax == SERD_TURTLE || writer->syntax == SERD_TRIG) {
-			if (ctx(writer, SERD_GRAPH) || ctx(writer, SERD_SUBJECT)) {
-				sink(" .\n\n", 4, writer);
-				reset_context(writer, true);
-			}
-			sink("@prefix ", 8, writer);
-			sink(serd_node_get_string(name), name->n_bytes, writer);
-			sink(": <", 3, writer);
-			write_uri_from_node(writer, uri);
-			sink("> .\n", 4, writer);
+	if (writer->syntax == SERD_TURTLE || writer->syntax == SERD_TRIG) {
+		if (ctx(writer, SERD_GRAPH) || ctx(writer, SERD_SUBJECT)) {
+			sink(" .\n\n", 4, writer);
+			reset_context(writer, true);
 		}
-		writer->indent = 0;
-		return reset_context(writer, true);
+		sink("@prefix ", 8, writer);
+		sink(serd_node_get_string(name), name->n_bytes, writer);
+		sink(": <", 3, writer);
+		write_uri_from_node(writer, uri);
+		sink("> .\n", 4, writer);
 	}
-	return SERD_ERR_UNKNOWN;
+	writer->indent = 0;
+	return reset_context(writer, true);
 }
 
 void
@@ -1020,7 +1015,7 @@ serd_writer_get_sink(SerdWriter* writer)
 SerdEnv*
 serd_writer_get_env(SerdWriter* writer)
 {
-	return writer->env;
+	return writer->iface.env;
 }
 
 size_t
