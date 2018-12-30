@@ -305,7 +305,7 @@ typedef struct {
 } SerdURI;
 
 /**
-   Syntax style options.
+   Writer style options.
 
    The style of the writer output can be controlled by ORing together
    values from this enumeration.  Note that some options are only supported
@@ -314,12 +314,12 @@ typedef struct {
 */
 typedef enum {
 	SERD_STYLE_ASCII = 1 << 0,  /**< Escape all non-ASCII characters. */
-} SerdStyle;
+} SerdWriterFlag;
 
 /**
-   Bitwise OR of SerdStyle values.
+   Bitwise OR of SerdWriterFlag values.
 */
-typedef uint32_t SerdStyleFlags;
+typedef uint32_t SerdWriterFlags;
 
 /**
    Free memory allocated by Serd.
@@ -1277,7 +1277,7 @@ SERD_API
 SerdWriter*
 serd_writer_new(SerdWorld*      world,
                 SerdSyntax      syntax,
-                SerdStyleFlags  style,
+                SerdWriterFlags flags,
                 SerdEnv*        env,
                 SerdWriteFunc   write_func,
                 void*           stream);
