@@ -230,7 +230,7 @@ typedef enum {
 	   <tt>nodeID</tt></a>
 	*/
 	SERD_BLANK = 4
-} SerdType;
+} SerdNodeType;
 
 /**
    Flags indicating certain string properties relevant to serialisation.
@@ -799,7 +799,7 @@ serd_new_blob(const void*     buf,
    Return the type of a node (SERD_URI, SERD_BLANK, or SERD_LITERAL).
 */
 SERD_API
-SerdType
+SerdNodeType
 serd_node_get_type(const SerdNode* node);
 
 /**

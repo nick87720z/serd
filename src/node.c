@@ -118,7 +118,7 @@ serd_node_total_size(const SerdNode* node)
 }
 
 SerdNode*
-serd_node_malloc(size_t n_bytes, SerdNodeFlags flags, SerdType type)
+serd_node_malloc(size_t n_bytes, SerdNodeFlags flags, SerdNodeType type)
 {
 	const size_t size = sizeof(SerdNode) + serd_node_pad_size(n_bytes);
 	SerdNode*    node = (SerdNode*)calloc(1, size);
@@ -145,7 +145,7 @@ serd_node_set(SerdNode** dst, const SerdNode* src)
 }
 
 static SerdNode*
-serd_new_simple(SerdType type, const char* str)
+serd_new_simple(SerdNodeType type, const char* str)
 {
 	if (!str) {
 		return NULL;
@@ -639,7 +639,7 @@ serd_new_blob(const void*     buf,
 	return node;
 }
 
-SerdType
+SerdNodeType
 serd_node_get_type(const SerdNode* node)
 {
 	return node ? node->type : SERD_NOTHING;
