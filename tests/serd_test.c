@@ -60,20 +60,15 @@ count_prefixes(void* handle, const SerdNode* name, const SerdNode* uri)
 	return SERD_SUCCESS;
 }
 
-typedef struct {
-	int n_statements;
-} ReaderTest;
-
 static SerdStatus
-test_sink(void*                handle,
-          SerdStatementFlags   flags,
-          const SerdStatement* statement)
+count_statements(void*                handle,
+                 SerdStatementFlags   flags,
+                 const SerdStatement* statement)
 {
 	(void)flags;
 	(void)statement;
 
-	ReaderTest* rt = (ReaderTest*)handle;
-	++rt->n_statements;
+	++*(size_t*)handle;
 	return SERD_SUCCESS;
 }
 
@@ -593,9 +588,9 @@ main(void)
 	// Rewind and test reader
 	fseek(fd, 0, SEEK_SET);
 
-	ReaderTest rt   = { 0 };
-	SerdSink*  sink = serd_sink_new(&rt);
-	serd_sink_set_statement_func(sink, test_sink);
+	size_t    n_statements = 0;
+	SerdSink* sink         = serd_sink_new(&n_statements);
+	serd_sink_set_statement_func(sink, count_statements);
 
 	SerdReader* reader = serd_reader_new(world, SERD_TURTLE, sink, 4096);
 	assert(reader);
@@ -609,7 +604,7 @@ main(void)
 
 	assert(!serd_reader_start_file(reader, path, true));
 	assert(!serd_reader_read_document(reader));
-	assert(rt.n_statements == 13);
+	assert(n_statements == 13);
 	serd_reader_finish(reader);
 
 	serd_reader_free(reader);
