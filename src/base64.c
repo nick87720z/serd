@@ -38,7 +38,7 @@ static const uint8_t b64_map[] =
    for decoding, shifted up by 47 to be in the range of printable ASCII.
    A '$' is a placeholder for characters not in the base64 alphabet.
 */
-static const char b64_unmap[] =
+static const uint8_t b64_unmap[] =
 	"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$m$$$ncdefghijkl$$$$$$"
 	"$/0123456789:;<=>?@ABCDEFGH$$$$$$IJKLMNOPQRSTUVWXYZ[\\]^_`ab$$$$"
 	"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
@@ -118,7 +118,7 @@ serd_base64_decode(void* buf, size_t* size, const char* str, size_t len)
 		uint8_t in[] = "====";
 		size_t  n_in = 0;
 		for (; i < len && n_in < 4; ++n_in) {
-			for (; i < len && !is_base64(ustr[i]); ++i) {} // Skip junk
+			for (; i < len && !is_base64(str[i]); ++i) {} // Skip junk
 			in[n_in] = ustr[i++];
 		}
 		if (n_in > 1) {
