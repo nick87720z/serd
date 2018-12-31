@@ -113,7 +113,7 @@ struct SerdWriterImpl {
 	SerdMessageFunc msg_func;
 	void*           msg_handle;
 	WriteContext    context;
-	unsigned        indent;
+	int             indent;
 	char*           bprefix;
 	size_t          bprefix_len;
 	Sep             last_sep;
@@ -383,7 +383,7 @@ static void
 write_newline(SerdWriter* writer)
 {
 	sink("\n", 1, writer);
-	for (unsigned i = 0; i < writer->indent; ++i) {
+	for (int i = 0; i < writer->indent; ++i) {
 		sink("\t", 1, writer);
 	}
 }
@@ -395,7 +395,7 @@ write_sep(SerdWriter* writer, const Sep sep)
 
 	// Adjust indent, but tolerate if it would become negative
 	writer->indent =
-		((rule->indent >= 0 || writer->indent >= (unsigned)-rule->indent)
+		((rule->indent >= 0 || writer->indent >= -rule->indent)
 		 ? writer->indent + rule->indent
 		 : 0);
 
