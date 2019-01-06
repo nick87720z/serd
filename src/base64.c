@@ -95,7 +95,7 @@ serd_base64_encode(char* const       str,
 static inline uint8_t
 unmap(const uint8_t in)
 {
-	return b64_unmap[in] - 47;
+	return b64_unmap[in] - 47U;
 }
 
 /** Decode 4 base64 characters to 3 raw bytes. */
@@ -105,7 +105,7 @@ decode_chunk(const uint8_t in[4], uint8_t out[3])
 	out[0] = (uint8_t)(((unmap(in[0]) << 2))        | unmap(in[1]) >> 4);
 	out[1] = (uint8_t)(((unmap(in[1]) << 4) & 0xF0) | unmap(in[2]) >> 2);
 	out[2] = (uint8_t)(((unmap(in[2]) << 6) & 0xC0) | unmap(in[3]));
-	return 1 + (in[2] != '=') + ((in[2] != '=') && (in[3] != '='));
+	return 1U + (in[2] != '=') + ((in[2] != '=') && (in[3] != '='));
 }
 
 SerdStatus
