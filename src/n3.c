@@ -420,9 +420,9 @@ is_PN_CHARS_BASE(const uint32_t c)
 static SerdStatus
 read_PN_CHARS_BASE(SerdReader* reader, SerdNode* dest)
 {
-	uint32_t      code;
-	const uint8_t c  = peek_byte(reader);
-	SerdStatus    st = SERD_SUCCESS;
+	uint32_t      code = 0;
+	const uint8_t c    = peek_byte(reader);
+	SerdStatus    st   = SERD_SUCCESS;
 	if (is_alpha(c)) {
 		push_byte(reader, dest, eat_byte_safe(reader, c));
 	} else if (!(c & 0x80)) {
@@ -450,9 +450,9 @@ is_PN_CHARS(const uint32_t c)
 static SerdStatus
 read_PN_CHARS(SerdReader* reader, SerdNode* dest)
 {
-	uint32_t      code;
-	const uint8_t c = peek_byte(reader);
-	SerdStatus    st = SERD_SUCCESS;
+	uint32_t      code = 0;
+	const uint8_t c    = peek_byte(reader);
+	SerdStatus    st   = SERD_SUCCESS;
 	if (is_alpha(c) || is_digit(c) || c == '_' || c == '-') {
 		push_byte(reader, dest, eat_byte_safe(reader, c));
 	} else if (!(c & 0x80)) {
