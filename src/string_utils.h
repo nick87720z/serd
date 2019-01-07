@@ -30,35 +30,35 @@ static const uint8_t replacement_char[] = { 0xEF, 0xBF, 0xBD };
 
 /** Return true if `c` lies within [`min`...`max`] (inclusive) */
 static inline bool
-in_range(const char c, const char min, const char max)
+in_range(const int c, const int min, const int max)
 {
 	return (c >= min && c <= max);
 }
 
 /** RFC2234: ALPHA ::= %x41-5A / %x61-7A  ; A-Z / a-z */
 static inline bool
-is_alpha(const char c)
+is_alpha(const int c)
 {
 	return in_range(c, 'A', 'Z') || in_range(c, 'a', 'z');
 }
 
 /** RFC2234: DIGIT ::= %x30-39  ; 0-9 */
 static inline bool
-is_digit(const char c)
+is_digit(const int c)
 {
 	return in_range(c, '0', '9');
 }
 
 /** RFC2234: HEXDIG ::= DIGIT / "A" / "B" / "C" / "D" / "E" / "F" */
 static inline bool
-is_hexdig(const char c)
+is_hexdig(const int c)
 {
 	return is_digit(c) || in_range(c, 'A', 'F');
 }
 
 /** Turtle / JSON / C: XDIGIT ::= DIGIT / A-F / a-f */
 static inline bool
-is_xdigit(const char c)
+is_xdigit(const int c)
 {
 	return is_hexdig(c) || in_range(c, 'a', 'f');
 }
@@ -77,7 +77,7 @@ is_space(const char c)
 
 /** Return true iff `c` is a valid encoded base64 character. */
 static inline bool
-is_base64(const char c)
+is_base64(const int c)
 {
 	return is_alpha(c) || is_digit(c) || c == '+' || c == '/' || c == '=';
 }

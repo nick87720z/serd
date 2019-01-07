@@ -96,7 +96,7 @@ uri_is_under(const SerdURI* uri, const SerdURI* root)
 }
 
 static inline bool
-is_uri_scheme_char(const uint8_t c)
+is_uri_scheme_char(const int c)
 {
 	switch (c) {
 	case ':': case '+': case '-': case '.':
