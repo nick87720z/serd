@@ -142,12 +142,13 @@ supports_abbrev(const SerdWriter* writer)
 	return writer->syntax == SERD_TURTLE || writer->syntax == SERD_TRIG;
 }
 
-static inline WriteContext*
-anon_stack_top(SerdWriter* writer)
+static inline const WriteContext*
+anon_stack_top(const SerdWriter* writer)
 {
 	assert(!serd_stack_is_empty(&writer->anon_stack));
-	return (WriteContext*)(writer->anon_stack.buf
-	                       + writer->anon_stack.size - sizeof(WriteContext));
+	const char* const end = writer->anon_stack.buf + writer->anon_stack.size;
+	const void* const top = end - sizeof(WriteContext);
+	return (const WriteContext*)top;
 }
 
 static inline SerdNode*
