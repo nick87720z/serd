@@ -108,17 +108,17 @@ read_UCHAR(SerdReader* reader, SerdNode* dest, uint32_t* char_code)
 	uint32_t c = code;
 	switch (size) {
 	case 4:
-		buf[3] = 0x80 | (uint8_t)(c & 0x3F);
+		buf[3] = 0x80U | (uint8_t)(c & 0x3F);
 		c >>= 6;
 		c |= (16 << 12);  // set bit 4
         // fallthru
 	case 3:
-		buf[2] = 0x80 | (uint8_t)(c & 0x3F);
+		buf[2] = 0x80U | (uint8_t)(c & 0x3F);
 		c >>= 6;
 		c |= (32 << 6);  // set bit 5
         // fallthru
 	case 2:
-		buf[1] = 0x80 | (uint8_t)(c & 0x3F);
+		buf[1] = 0x80U | (uint8_t)(c & 0x3F);
 		c >>= 6;
 		c |= 0xC0;  // set bits 6 and 7
         // fallthru
