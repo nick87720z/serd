@@ -83,7 +83,7 @@ read_UCHAR(SerdReader* reader, SerdNode* dest, uint32_t* char_code)
 	}
 
 	char*          endptr = NULL;
-	const uint32_t code   = strtoul((const char*)buf, &endptr, 16);
+	const uint32_t code   = (uint32_t)strtoul((const char*)buf, &endptr, 16);
 	assert(endptr == (char*)buf + length);
 
 	unsigned size = 0;

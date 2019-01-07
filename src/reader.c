@@ -54,7 +54,8 @@ set_blank_id(SerdReader* reader, SerdNode* node, size_t buf_size)
 {
 	char*       buf    = (char*)(node + 1);
 	const char* prefix = reader->bprefix ? (const char*)reader->bprefix : "";
-	node->n_bytes = snprintf(buf, buf_size, "%sb%u", prefix, reader->next_id++);
+	node->n_bytes =
+		(size_t)snprintf(buf, buf_size, "%sb%u", prefix, reader->next_id++);
 }
 
 size_t

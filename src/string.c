@@ -119,7 +119,7 @@ serd_strtod(const char* str, size_t* end)
 	}
 
 	if (end) {
-		*end = s - str;
+		*end = (size_t)(s - str);
 	}
 
 	return result * sign;
