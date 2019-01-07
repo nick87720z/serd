@@ -18,6 +18,7 @@
 
 #include "serd_internal.h"
 #include "string_utils.h"
+#include "warnings.h"
 
 #include <assert.h>
 #include <float.h>
@@ -27,15 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef _WIN32
-#    ifndef isnan
-#        define isnan(x) _isnan(x)
-#    endif
-#    ifndef isinf
-#        define isinf(x) (!_finite(x))
-#    endif
-#endif
 
 static const size_t serd_node_align = sizeof(SerdNode);
 
@@ -527,9 +519,11 @@ serd_digits(double abs)
 SerdNode*
 serd_new_decimal(double d, unsigned frac_digits, const SerdNode* datatype)
 {
-	if (isnan(d) || isinf(d)) {
+	SERD_DISABLE_CONVERSION_WARNINGS
+	if (!isfinite(d)) {
 		return NULL;
 	}
+	SERD_RESTORE_WARNINGS
 
 	const SerdNode* type       = datatype ? datatype : &serd_xsd_decimal.node;
 	const double    abs_d      = fabs(d);
