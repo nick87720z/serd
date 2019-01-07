@@ -283,14 +283,14 @@ read_ws_star(SerdReader* reader)
 }
 
 static inline bool
-peek_delim(SerdReader* reader, const char delim)
+peek_delim(SerdReader* reader, const uint8_t delim)
 {
 	read_ws_star(reader);
 	return peek_byte(reader) == delim;
 }
 
 static inline bool
-eat_delim(SerdReader* reader, const char delim)
+eat_delim(SerdReader* reader, const uint8_t delim)
 {
 	if (peek_delim(reader, delim)) {
 		eat_byte_safe(reader, delim);
@@ -1190,7 +1190,10 @@ read_collection(SerdReader* reader, ReadContext ctx, SerdNode** dest)
 }
 
 static SerdStatus
-read_subject(SerdReader* reader, ReadContext ctx, SerdNode** dest, char* s_type)
+read_subject(SerdReader* reader,
+             ReadContext ctx,
+             SerdNode**  dest,
+             uint8_t*    s_type)
 {
 	SerdStatus st      = SERD_SUCCESS;
 	bool       ate_dot = false;
@@ -1351,7 +1354,7 @@ read_wrappedGraph(SerdReader* reader, ReadContext* ctx)
 	while (peek_byte(reader) != '}') {
 		const size_t orig_stack_size = reader->stack.size;
 		bool         ate_dot         = false;
-		char         s_type          = 0;
+		uint8_t      s_type          = 0;
 
 		ctx->subject = 0;
 		SerdStatus st = read_subject(reader, *ctx, &ctx->subject, &s_type);
@@ -1396,7 +1399,7 @@ read_n3_statement(SerdReader* reader)
 	ReadContext        ctx     = { 0, 0, 0, 0, &flags };
 	SerdNode*          subj    = 0;
 	bool               ate_dot = false;
-	char               s_type  = 0;
+	uint8_t            s_type  = 0;
 	SerdStatus         st      = SERD_SUCCESS;
 	read_ws_star(reader);
 	switch (peek_byte(reader)) {
@@ -1502,7 +1505,7 @@ read_nquadsDoc(SerdReader* reader)
 		SerdStatementFlags flags   = 0;
 		ReadContext        ctx     = { 0, 0, 0, 0, &flags };
 		bool               ate_dot = false;
-		char               s_type  = false;
+		uint8_t            s_type  = 0;
 		read_ws_star(reader);
 		if (peek_byte(reader) == '\0') {
 			reader->source.eof = true;

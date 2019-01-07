@@ -65,8 +65,8 @@ uri_rooted_index(const SerdURI* uri, const SerdURI* root)
 	const size_t root_len        = uri_path_len(root);
 	size_t       last_root_slash = 0;
 	for (size_t i = 0; i < path_len && i < root_len; ++i) {
-		const uint8_t u = uri_path_at(uri, i);
-		const uint8_t r = uri_path_at(root, i);
+		const char u = uri_path_at(uri, i);
+		const char r = uri_path_at(root, i);
 
 		differ = differ || u != r;
 		if (r == '/') {

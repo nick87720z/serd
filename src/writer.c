@@ -324,7 +324,7 @@ write_text(SerdWriter* writer, TextContext ctx,
 			break;  // Reached end
 		}
 
-		const uint8_t in = utf8[i++];
+		const char in = utf8[i++];
 		if (ctx == WRITE_LONG_STRING) {
 			switch (in) {
 			case '\\': len += sink("\\\\", 2, writer); continue;
