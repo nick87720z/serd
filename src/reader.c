@@ -241,6 +241,7 @@ serd_reader_start_stream(SerdReader*         reader,
                          const SerdNode*     name,
                          size_t              page_size)
 {
+	serd_reader_finish(reader);
 	return serd_byte_source_open_source(
 		&reader->source, read_func, error_func, NULL, stream, name, page_size);
 }
@@ -248,6 +249,8 @@ serd_reader_start_stream(SerdReader*         reader,
 SerdStatus
 serd_reader_start_file(SerdReader* reader, const char* uri, bool bulk)
 {
+	serd_reader_finish(reader);
+
 	char* const path = serd_file_uri_parse(uri, NULL);
 	if (!path) {
 		return SERD_ERR_BAD_ARG;
@@ -277,6 +280,7 @@ serd_reader_start_string(SerdReader*     reader,
                          const char*     utf8,
                          const SerdNode* name)
 {
+	serd_reader_finish(reader);
 	return serd_byte_source_open_string(&reader->source, utf8, name);
 }
 
