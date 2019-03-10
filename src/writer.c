@@ -896,7 +896,8 @@ serd_writer_end_anon(SerdWriter*     writer,
 	writer->context = *anon_stack_top(writer);
 	serd_stack_pop(&writer->anon_stack, sizeof(WriteContext));
 
-	if (serd_node_equals(node, writer->context.subject)) {
+	if (writer->context.predicate &&
+	    serd_node_equals(node, writer->context.subject)) {
 		// Now-finished anonymous node is the new subject with no other context
 		writer->context.predicate->type = SERD_NOTHING;
 	}
