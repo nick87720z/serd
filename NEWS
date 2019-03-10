@@ -15,8 +15,9 @@ serd (1.0.0) unstable;
   * Add logging functions to public API
   * Add model for storing statements in memory
   * Add support for validation
+  * Add option for writing terse output without newlines
 
- -- David Robillard <d@drobilla.net>  Sat, 19 Jan 2019 13:31:12 +0100
+ -- David Robillard <d@drobilla.net>  Sun, 10 Mar 2019 13:21:37 +0100
 
 serd (0.30.1) unstable;
 
