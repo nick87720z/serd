@@ -270,8 +270,8 @@ zix_btree_node_find(const ZixBTree* const     t,
 	assert(zix_btree_node_is_sorted_with_respect_to(t, n, e));
 #endif
 
-	uint16_t first = 0;
-	uint16_t len   = n->n_vals;
+	unsigned first = 0;
+	unsigned len   = n->n_vals;
 	while (len > 0) {
 		const unsigned half = len >> 1U;
 		const unsigned i    = first + half;
