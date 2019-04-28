@@ -119,7 +119,7 @@ main(int argc, char** argv)
 	SerdEnv*             env      = serd_env_new(NULL);
 	SerdInserter*        inserter = serd_inserter_new(model, env, NULL);
 	SerdReader*          reader   = serd_reader_new(
-		world, SERD_TURTLE, serd_inserter_get_sink(inserter), stack_size);
+		world, SERD_TURTLE, 0, serd_inserter_get_sink(inserter), stack_size);
 
 	for (; a < argc; ++a) {
 		const char* input   = argv[a];

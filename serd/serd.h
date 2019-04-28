@@ -274,6 +274,14 @@ typedef struct {
 	SerdStringView fragment;   ///< Fragment
 } SerdURI;
 
+/// Reader options
+typedef enum {
+	SERD_READ_STRICT = 1 << 0,  ///< Do not tolerate invalid input
+} SerdReaderFlag;
+
+/// Bitwise OR of SerdReaderFlag values
+typedef uint32_t SerdReaderFlags;
+
 /**
    Writer style options
 
@@ -1100,19 +1108,9 @@ SERD_API
 SerdReader*
 serd_reader_new(SerdWorld*      world,
                 SerdSyntax      syntax,
+                SerdReaderFlags flags,
                 const SerdSink* sink,
                 size_t          stack_size);
-
-/**
-   Enable or disable strict parsing
-
-   The reader is non-strict (lax) by default, which will tolerate URIs with
-   invalid characters.  Setting strict will fail when parsing such files.  An
-   error is printed for invalid input in either case.
-*/
-SERD_API
-void
-serd_reader_set_strict(SerdReader* reader, bool strict);
 
 /**
    Set a prefix to be added to all blank node identifiers
