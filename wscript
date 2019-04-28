@@ -592,8 +592,10 @@ def test(tst):
         check([serdi, '-e', 'file://%s/' % srcdir], name='Read directory')
         check([serdi, 'file://%s/' % srcdir], name='Bulk read directory')
         if os.path.exists('/dev/full'):
+            check([serdi, 'file://%s/tests/good/base.ttl' % srcdir],
+                  stdout='/dev/full', name='Short write error')
             check([serdi, 'file://%s/tests/good/manifest.ttl' % srcdir],
-                  stdout='/dev/full', name='Write error')
+                  stdout='/dev/full', name='Long write error')
 
     # Serd-specific test suites
     serd_base = 'http://drobilla.net/sw/serd/tests/'
